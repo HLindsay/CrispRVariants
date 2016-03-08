@@ -72,9 +72,9 @@ setMethod("barplotAlleleFreqs", signature("CrisprSet"),
     ac <- rowsum(ac, vls)
     clrs <- clrs[var_order %in% rownames(ac)]
     var_labels <- var_labels[var_order %in% rownames(ac)]
-    barplotAlleleFreqs(ac, category.labels = var_labels,
+    return(barplotAlleleFreqs(ac, category.labels = var_labels,
                        bar.colours = clrs, group = group,
-                       classify = FALSE, ...)
+                       classify = FALSE, ...))
 })
 
 
@@ -156,6 +156,10 @@ setMethod("barplotAlleleFreqs", signature("matrix"),
       var_labels <- rownames(ac)
     }
     var_clrs <- clrs
+    if (length(var_labels) > length(var_clrs)){
+      stop(sprintf("Not enough colours in default palette.  Please supply %s colours",
+                   length(var_labels)))
+    }
   }
 
   af <- reshape2::melt(sweep(ac, 2, colSums(ac), "/"))
@@ -177,6 +181,7 @@ setMethod("barplotAlleleFreqs", signature("matrix"),
     theme(legend.position = "bottom", legend.title = element_blank(),
           axis.text = element_text(size = axis.text.size),
           legend.text = element_text(size = legend.text.size),
+          legend.key = element_blank(),
           plot.margin = grid::unit(c(0.5,0.7,0.5,0),"lines"),
           panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 

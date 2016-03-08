@@ -1,4 +1,7 @@
 #'@title Plot alignments, frequencies and location of target sequence
+#'@description Combines a plot of transcript structure, alleles
+#' aligned with respect to a reference genome and a heatmap of
+#' counts or proportions of each allele in a set of data.
 #'@rdname plotVariants
 #'@param obj The object to be plotted
 #'@return A ggplot2 plot of the variants
@@ -75,6 +78,7 @@ setMethod("plotVariants", signature("CrisprSet"),
   if (isTRUE(include_txs)){
     annotate_args <- modifyList(list(txdb = txdb, target = target), annotate_args)
     gene_p <- do.call(annotateGenePlot, annotate_args)
+    gene_p <- ggplot2::ggplotGrob(gene_p)
   } else {
     arrange_args[["row.ht.ratio"]] <- c(0,1)
     gene_p <- grid::grid.rect(gp=grid::gpar(col="white"), draw = FALSE)
@@ -87,8 +91,7 @@ setMethod("plotVariants", signature("CrisprSet"),
 
   plotAlignments.args$obj = obj
   aln_p <- do.call(plotAlignments, plotAlignments.args)
-  aln_p <- aln_p + theme(legend.margin=unit(-0.5,"cm"))
-
+  aln_p <- aln_p + theme(legend.margin=grid::unit(0.2,"cm"))
   plotFreqHeatmap.args$obj = obj
   heat_p <- do.call(plotFreqHeatmap, plotFreqHeatmap.args)
   heat_p <- heat_p + theme(plot.background=element_rect(fill = "transparent",

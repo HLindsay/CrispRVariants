@@ -229,9 +229,13 @@ Input parameters:
     }
     temp[sum(keep) == 0] <- match.label
     renamed <- as.character(temp)
-    renamed <- .self$.splitNonIndel(ref, renamed, rc, match_label = match.label,
-                                    mismatch_label = mismatch.label, cut_site = target.loc,
-                                    upstream = upstream, downstream = downstream)
+    if (isTRUE(separate.snv)){
+      renamed <- .self$.splitNonIndel(ref, renamed, rc, match_label = match.label,
+                                    mismatch_label = mismatch.label,
+                                    cut_site = target.loc, upstream = upstream,
+                                    downstream = downstream)
+      
+    }
 
     .self$field("cigar_labels", renamed)
     renamed

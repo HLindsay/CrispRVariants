@@ -1,4 +1,6 @@
 #'@title Plot a table of counts with colours indicating frequency
+#'@description Creates a heatmap from a matrix of counts or proportions,
+#'where tiles are coloured by the proportion and labeled with the value.
 #'@rdname plotFreqHeatmap
 #'@export
 setGeneric("plotFreqHeatmap", function(obj, ...) {
@@ -58,6 +60,9 @@ setMethod("plotFreqHeatmap", signature("matrix"),
 
   # If a sample group is supplied, reorder the columns of counts
   if (! is.null(group)){
+    if (! length(group) == ncol(obj)){
+      stop("Group should be a vector or factor the same length as ncol(obj)")
+    }
     if (! class(group) == "factor") group <- factor(group, levels = unique(group))
 
     obj <- obj[,order(group), drop = FALSE]

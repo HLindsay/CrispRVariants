@@ -7,16 +7,16 @@
 #'@rdname readsToTarget
 #'
 #'@import methods
-#'@import ggplot2
-#'@import grid
-#'@import gridExtra
-#'@import S4Vectors
-#'@import IRanges
-#'@import GenomicRanges
-#'@import Biostrings
-#'@import Rsamtools
-#'@import GenomicAlignments
 #'@import BiocParallel
+#'@import Biostrings
+#'@import ggplot2
+#'@import GenomicAlignments
+#'@import GenomicRanges
+#'@import IRanges
+#'@import Rsamtools
+#'@import S4Vectors
+#'@importFrom grid gpar grid.rect
+#'@importFrom gridExtra grid.arrange arrangeGrob
 #'@importFrom reshape2 melt
 #'@importFrom AnnotationDbi select
 #'@importFrom GenomeInfoDb seqlengths
@@ -591,10 +591,10 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
   if (ch.action == "ignore"){
     # If chimeras are not to be excluded or merged,
     # we only need to read in reads overlapping the target region
-    param <- ScanBamParam(what = c("seq", "flag"), which = target)
+    param <- Rsamtools::ScanBamParam(what = c("seq", "flag"), which = target)
   } else {
     # In this case, must read in the entire bam to be sure of finding chimeric reads
-    param <- ScanBamParam(what = c("seq", "flag"))
+    param <- Rsamtools::ScanBamParam(what = c("seq", "flag"))
   }
   bam <- GenomicAlignments::readGAlignments(file, param = param, use.names = TRUE)
   if (length(bam) == 0){
@@ -647,6 +647,9 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
 
 #'@title Internal CrispRVariants function for deciding whether to reverse
 #'complement aligned reads
+#'@description Guides on the negative strand may be displayed with respect
+#' to either strand.  This function checks whether a guide is on the negative
+#' strand and should be reverse complemented.
 #'@param target.strand Strand of the target region
 #'@param reverse.complement Should the alignment be oriented to match the strand
 #'@return A logical value indicating whether the narrowed alignment should be reverse complemented.
