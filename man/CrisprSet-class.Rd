@@ -148,7 +148,7 @@ Input parameters:
 \item{\code{heatmapCigarFreqs(as.percent = TRUE, x.size = 8, y.size = 8,
   x.axis.title = NULL, x.angle = 90, min.freq = 0, min.count = 0,
   top.n = nrow(.self$cigar_freqs), type = c("counts", "proportions"),
-  order = NULL, ...)}}{Description:
+  header = c("default", "counts", "efficiency"), order = NULL, ...)}}{Description:
     Internal method for CrispRVariants:plotFreqHeatmap, optionally filters the table
     of variants, then a table of variant counts, coloured by counts or proportions.
 
@@ -164,6 +164,12 @@ Input parameters:
                   least one sample
     top.n:        Include only the n most common variants
     type:         Should labels show counts or proportions?  (Default: counts)
+    header:       What should be displayed in the header of the heatmap.
+                  Default: total count for type = "counts" or proportion of
+                  reads shown in the matrix for type = "proportions".
+                  If "counts" is selected, total counts will be shown for both
+                  types.  "efficiency" shows the mutation efficiency
+                  (calculated with default settings)
     order:        Reorder the columns according to this order (Default: NULL)
     ...:
 
