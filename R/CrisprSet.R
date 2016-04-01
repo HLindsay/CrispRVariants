@@ -786,6 +786,7 @@ See also:
     if (! is.null(order)){
       cig_freqs <- cig_freqs[,order]
       header <- header[order]
+      col_sums <- col_sums[order]
     }
     p <- plotFreqHeatmap(cig_freqs, header = header, header.name = header_name,
                          col.sums = col_sums, as.percent = as.percent,
