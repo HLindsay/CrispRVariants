@@ -27,6 +27,7 @@ Imports:
     GenomeInfoDb,
     GenomicAlignments,
     GenomicRanges,
+    grDevices,
     grid,
     gridExtra,
     IRanges,

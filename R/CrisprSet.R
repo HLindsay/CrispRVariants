@@ -722,7 +722,8 @@ Result:
                                x.axis.title = NULL, x.angle = 90,
                                min.freq = 0, min.count = 0,
                                top.n = nrow(.self$cigar_freqs),
-                               type = c("counts", "proportions"), 
+                               type = c("counts", "proportions"),
+                               header = c("default", "counts", "efficiency"),
                                order = NULL, ...){
 
     '
@@ -742,6 +743,12 @@ Input parameters:
                   least one sample
     top.n:        Include only the n most common variants
     type:         Should labels show counts or proportions?  (Default: counts)
+    header:       What should be displayed in the header of the heatmap.
+                  Default: total count for type = "counts" or proportion of
+                  reads shown in the matrix for type = "proportions".
+                  If "counts" is selected, total counts will be shown for both
+                  types.  "efficiency" shows the mutation efficiency
+                  (calculated with default settings)
     order:        Reorder the columns according to this order (Default: NULL)
     ...:
 
@@ -756,19 +763,32 @@ See also:
 
     cig_freqs <- .self$.getFilteredCigarTable(top.n, min.count, min.freq,
                                               type = type)
-    header <- NULL
+    header_type <- match.arg(header)
+    header_name <- "Total"
     type <- match.arg(type)
-    if (type == "counts"){ header <- colSums(.self$.getFilteredCigarTable())
-    } else if (type == "proportions"){
-      header <- round(colSums(cig_freqs), 2)
+    
+    if (header_type == "default" | header_type == "counts"){
+      header <- colSums(.self$.getFilteredCigarTable())
+    } else if (header_type == "efficiency"){
+      header <- .self$mutationEfficiency()[1:ncol(cig_freqs)]
+      header_name <- "Mutation efficiency"
+    }
+
+    if (type == "proportions"){
+      # If type == proportions, default means proportions not counts
+      if (header_type == "default") header <- round(colSums(cig_freqs), 2)
       cig_freqs <- round(cig_freqs, 2)
+      col_sums <- rep(100, ncol(cig_freqs))
+    } else if (type == "counts"){
+      col_sums <- colSums(.self$.getFilteredCigarTable())
     }
 
     if (! is.null(order)){
       cig_freqs <- cig_freqs[,order]
       header <- header[order]
     }
-    p <- plotFreqHeatmap(cig_freqs, header = header, as.percent = as.percent,
+    p <- plotFreqHeatmap(cig_freqs, header = header, header.name = header_name,
+                         col.sums = col_sums, as.percent = as.percent,
                          x.size = x.size, y.size = y.size,
                          x.axis.title = x.axis.title,
                          x.angle = x.angle, add.other = TRUE, ...)

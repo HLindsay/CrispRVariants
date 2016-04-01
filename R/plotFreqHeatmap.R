@@ -9,11 +9,13 @@ setGeneric("plotFreqHeatmap", function(obj, ...) {
 
 #'@rdname plotFreqHeatmap
 #'@param obj A matrix of counts with rows = feature, columns = sample
-#'@param col.sums Include a row of column totals at the top of the
-#'plot (Default: TRUE)
-#'@param header Alternative column titles, e.g. column sums
-#'for the unfiltered data set (Default: NULL).  If as.percent is true,
-#'header is assumed to be column sums for the full data set.
+#'@param col.sums Alternative column sums to be used for calculating
+#'the tile colours if as.percent = TRUE, e.g. if "obj" is a subset of
+#'a larger data set.  If "NULL" (default), the column sums of "obj" are used.
+#'@param header Alternative column titles, e.g. column sums for the
+#'unfiltered data set when obj is a subset.  If set to "NA", column sums
+#'of obj are displayed. If "NULL", no header is displayed (Default: NA).
+#'@param header.name Label for the header row (Default: "Total")
 #'@param group Grouping factor for columns.  If supplied, columns are
 #'ordered to match the levels  (Default: NULL)
 #'@param group.colours Colours for column groups, should match levels of "group".
@@ -36,10 +38,10 @@ setGeneric("plotFreqHeatmap", function(obj, ...) {
 #'@param ... additional arguments
 #'@return The ggplot2 plot of the variant frequencies
 setMethod("plotFreqHeatmap", signature("matrix"),
-          function(obj, ..., col.sums = TRUE, header = NULL,
+          function(obj, ..., col.sums = NULL, header = NA, header.name = "Total",
                    group = NULL, group.colours = NULL, as.percent = TRUE,
                    x.axis.title = NULL, x.size = 6, y.size = 8, x.angle = 90,
-                   legend.text.size = 6, plot.text.size = 2, line.width = 1,
+                   legend.text.size = 6, plot.text.size = 3, line.width = 1,
                    x.hjust = 1, legend.position = "right", x.labels = NULL,
                    legend.key.height = grid::unit(1, "lines")) {
 
@@ -48,16 +50,23 @@ setMethod("plotFreqHeatmap", signature("matrix"),
   # param colour.vals A matrix of the same dimensions as obj containing
   # numbers that will be used to colour the heatmap.
   
-  # Make space for totals to be added (either header or col.sums)
-  if (length(header) == ncol(obj)){
-    col.sums <- TRUE
-  } else if (length(header) > 0){
-    stop("Header length should equal to the number of columns of obj")
-  }
-  if (isTRUE(col.sums)){
+  
+  # If there should be a header, create it and make space in plot
+  add_header <- ifelse(is.null(header), FALSE, TRUE)
+  
+  if (isTRUE(add_header)){
+    # If header is not specified, it should be colSums
+    if (is.na(header[1])) header <- colSums(obj)
+    
+    # If header is specified, it should have enough values
+    if (!length(header) == ncol(obj)){
+      stop("Header length should equal to the number of columns of obj")
+    }
+    temp <- rownames(obj)
     obj <- rbind(Total = rep(NA, ncol(obj)), obj)
+    rownames(obj) <- c(header.name, temp)
   }
-
+  
   # If a sample group is supplied, reorder the columns of counts
   if (! is.null(group)){
     if (! length(group) == ncol(obj)){
@@ -77,9 +86,6 @@ setMethod("plotFreqHeatmap", signature("matrix"),
       clrs <- c("#000000","#0072B2","#E69F00","#009E73",
                 "#56B4E9","#D55E00","#CC79A7")
 
-      #clrs <- c("#332288","#661100","#117733","#D55E00","#0072B2",
-      #          "#AA4499","#009E73","#56B4E9","#CC79A7","#88CCEE",
-      #          "#44AA99","#999933","#CC6677","#E69F00","#88CCEE")
       clrs <- clrs[group]
     } else {
       clrs <- group.colours[group]
@@ -92,16 +98,20 @@ setMethod("plotFreqHeatmap", signature("matrix"),
 
   # Create coloured tile background
   if (isTRUE(as.percent)){
-    # If a header is provided, assume it is col sums for the entire data set
-    if (length(header) > 0){
-      totals <- as.numeric(header)
-    } else {
-      totals <- colSums(na.omit(obj))
+    
+    # If col.sums are provided, use these, otherwise use the column sums
+    if (is.null(col.sums)){
+      col.sums <- colSums(obj, na.rm = TRUE)
+    } else if (! length(col.sums) == ncol(obj)){
+      stop("Number of col.sums should equal to the number of columns of obj")
     }
+    totals <- as.numeric(col.sums)
+    
     m <- t(t(obj)/totals) * 100
     m <- reshape2::melt(m)
     colnames(m) <- c("Feature", "Sample","Percentage")
     m$Feature <- factor(m$Feature, levels = rev(levels(m$Feature)))
+    
     g <- ggplot(m) + geom_tile(aes_q(x = quote(Sample),
                                      y = quote(Feature),
                                      fill = quote(Percentage)))
@@ -121,11 +131,8 @@ setMethod("plotFreqHeatmap", signature("matrix"),
   xranges <- ggplot_build(g)$panel$ranges[[1]]$x.range
   yranges <- ggplot_build(g)$panel$ranges[[1]]$y.range
 
-  if (isTRUE(col.sums)){
+  if (isTRUE(add_header)){
     idxs <- which(is.na(counts$Count))
-    if (length(header) != ncol(obj)){
-      header <- colSums(obj, na.rm = TRUE)
-    }
     counts$Count[idxs] <- header
     counts$ff[idxs] <- "bold"
     box_coords[box_row,] <- c(min(xranges), max(xranges),
@@ -145,7 +152,8 @@ setMethod("plotFreqHeatmap", signature("matrix"),
                      size = plot.text.size)
 
   # Colour the boxes - white for 0, darkred for highest
-  hmcols<-colorRampPalette(c("white","gold","orange","orangered","red", "darkred"))(50)
+  hmcols <- grDevices::colorRampPalette(c("white","gold","orange",
+                                          "orangered","red", "darkred"))(50)
 
   # No colour bar legend if the max count is 1
   if (max(counts$Count) > 1){

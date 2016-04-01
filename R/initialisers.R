@@ -15,6 +15,7 @@
 #'@import IRanges
 #'@import Rsamtools
 #'@import S4Vectors
+#'@importFrom grDevices colorRampPalette
 #'@importFrom grid gpar grid.rect
 #'@importFrom gridExtra grid.arrange arrangeGrob
 #'@importFrom reshape2 melt
