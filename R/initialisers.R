@@ -21,6 +21,7 @@
 #'@importFrom reshape2 melt
 #'@importFrom AnnotationDbi select
 #'@importFrom GenomeInfoDb seqlengths
+#'@importFrom utils modifyList
 #'@export
 setGeneric("readsToTarget", function(reads, target, ...) {
   standardGeneric("readsToTarget")})
