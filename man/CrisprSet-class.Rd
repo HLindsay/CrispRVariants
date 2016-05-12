@@ -114,6 +114,20 @@ Input parameters:
 Return value:
   A named vector classifying variant alleles as insertions, deletions, etc}
 
+\item{\code{consensusAlleles(cig_freqs = .self$cigar_freqs, return_nms = FALSE)}}{Description:
+Get variants by their cigar string, make the pairwise alignments for the consensus
+sequence for each variant allele
+
+Input parameters:
+cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs,
+but could also be filtered)
+return_nms: If true, return a list of sequences and labels (Default:FALSE)
+
+Return:
+A DNAStringSet of the consensus sequences for the specified alleles,
+or a list containing the consensus sequences and names for the labels
+if return_nms = TRUE}
+
 \item{\code{filterUniqueLowQual(min_count = 2, max_n = 0, verbose = TRUE)}}{Description:
   Deletes reads containing rare variant combinations and more than
   a minimum number of ambiguity characters within the target region.
