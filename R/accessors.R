@@ -138,3 +138,41 @@ setMethod("getChimeras", signature("CrisprSet"),
             }
             obj$crispr_runs[[sample]]$chimeras
           })
+
+
+
+#'@title Get consensus sequences for variant alleles
+#'@description Return consensus sequences of variant alleles.  At
+#'present, chimeric alignments are not included.
+#'@param obj An object containing aligned sequences
+#'@param ... additional arguments
+#'@author Helen Lindsay
+#'@rdname consensusSeqs
+#'@export
+setGeneric("consensusSeqs", function(obj, ...) {
+  standardGeneric("consensusSeqs")})
+
+#'@rdname consensusSeqs
+#'@param min.freq (Float n%) Return variants with frequency at least n% in at
+#'least one sample (Default: 0)
+#'@param min.count (Integer n) Return variants with count greater than n
+#'in at least one sample (Default: 0)
+#'@param top.n  (Integer n) If specified, return variants ranked at least n according
+#' to frequency across all samples (Default: 0, i.e. no cutoff)
+#'@return A DNAStringSet of consensus sequences
+#'@examples
+#'data("gol_clutch1")
+#'seqs <- consensusSeqs(gol, sample = 2)
+setMethod("consensusSeqs", signature("CrisprSet"),
+          function(obj, ..., top.n = NULL, min.freq = 0, min.count = 1){
+            top.n <- ifelse(is.null(top.n), nrow(obj$cigar_freqs), top.n)
+            cig_freqs <- obj$.getFilteredCigarTable(top.n = top.n,
+                                                    min.freq = min.freq,
+                                                    min.count = min.count,
+                                                    include.chimeras = FALSE,
+                                                    include.nonindel = TRUE,
+                                                    type = "counts")
+            obj$consensusAlleles(cig_freqs)
+})
+
+

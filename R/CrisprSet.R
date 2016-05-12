@@ -894,6 +894,72 @@ Return value:
     .self$field("insertion_sites", new_ins_sites)
   },
 
+
+  consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = FALSE){
+'
+Description:
+Get variants by their cigar string, make the pairwise alignments for the consensus
+sequence for each variant allele
+
+Input parameters:
+cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs,
+but could also be filtered)
+return_nms: If true, return a list of sequences and labels (Default:FALSE)
+
+Return:
+A DNAStringSet of the consensus sequences for the specified alleles,
+or a list containing the consensus sequences and names for the labels
+if return_nms = TRUE
+'
+    
+    # TO DO:
+    # This function only needs cig_labels, not cig_freqs
+    
+    cigs <- unlist(lapply(.self$crispr_runs, function(x) cigar(x$alns)), use.names = FALSE)
+    cig_labels <- unlist(lapply(.self$crispr_runs, function(x) x$cigar_labels), use.names = FALSE)
+    
+    names(cigs) <- cig_labels # calling by name with duplicates returns the first match
+    
+    splits <- split(seq_along(cig_labels), cig_labels)
+    splits <- splits[match(rownames(cig_freqs), names(splits))]
+    
+    splits_labels <- names(splits)
+    names(splits) <- cigs[names(splits)]
+    all_d <- grep("M", names(splits), invert = TRUE)
+    
+    x <- lapply(.self$crispr_runs, function(x) x$alns)
+    all_alns <- do.call(c, unlist(x, use.names = FALSE))
+    
+    seqs <- c()
+    starts <- c()
+    
+    for (i in seq_along(splits)){
+      if (i %in% all_d){
+        seqs[i] <- ""
+      } else {
+        idxs <- splits[[i]]
+        cig <- names(splits[[i]])
+        seqs[i] <- consensusString(mcols(all_alns[idxs])$seq)
+      }
+      start <- unique(start(all_alns[idxs]))
+      if (length(start) > 1)
+        stop("Sequences with the same cigar string have different starting locations.
+             This case is not implemented yet.")
+      starts[i] <- start[1]
+    }
+    
+    seqs <- Biostrings::DNAStringSet(seqs)
+    
+    if (isTRUE(return_nms)){
+      return(list(seqs = seqs, split_nms = names(splits), 
+                  split_labels = splits_labels, starts = starts))
+    }
+
+    names(seqs) <- splits_labels
+    seqs
+  },
+
+
   makePairwiseAlns = function(cig_freqs = .self$cigar_freqs, ...){
 '
 Description:
@@ -910,47 +976,14 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # The short cigars (not renumbered) do not have enough information,
     # use the full cigars for sorting
     # Do this just for the alns to be displayed?
+    temp <- consensusAlleles(cig_freqs, return_nms = TRUE)
+    alns <- seqsToAln(temp$split_nms, temp$seqs, target = .self$target,
+                 aln_start = temp$starts, ...)
 
-    cigs <- unlist(lapply(.self$crispr_runs, function(x) cigar(x$alns)), use.names = FALSE)
-    cig_labels <- unlist(lapply(.self$crispr_runs, function(x) x$cigar_labels), use.names = FALSE)
-
-    names(cigs) <- cig_labels # calling by name with duplicates returns the first match
-
-    splits <- split(seq_along(cig_labels), cig_labels)
-    splits <- splits[match(rownames(cig_freqs), names(splits))]
-
-    splits_labels <- names(splits)
-    names(splits) <- cigs[names(splits)]
-    all_d <- grep("M", names(splits), invert = TRUE)
-
-    x <- lapply(.self$crispr_runs, function(x) x$alns)
-    all_alns <- do.call(c, unlist(x, use.names = FALSE))
-
-    seqs <- c()
-    starts <- c()
-
-    for (i in seq_along(splits)){
-      if (i %in% all_d){
-        seqs[i] <- ""
-      } else {
-        idxs <- splits[[i]]
-        cig <- names(splits[[i]])
-        seqs[i] <- consensusString(mcols(all_alns[idxs])$seq)
-      }
-      start <- unique(start(all_alns[idxs]))
-      if (length(start) > 1)
-        stop("Sequences with the same cigar string have different starting locations.
-             This case is not implemented yet.")
-      starts[i] <- start[1]
-    }
-
-    seqs <- Biostrings::DNAStringSet(seqs)
-    alns <- seqsToAln(names(splits), seqs, target = .self$target,
-                 aln_start = starts, ...)
-
-    names(alns) <- splits_labels
+    names(alns) <- temp$split_labels
     alns
   },
+
 
   .genomeToTargetLocs = function(target.loc, target_start, target_end, rc = FALSE,
                                  gs = NULL, ge = NULL){
