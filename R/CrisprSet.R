@@ -134,7 +134,9 @@ CrisprSet$methods(
                                         target_start = start(target), target_end = end(target),
                                         rc = rc, match_label = match.label,
                                         mismatch_label = mismatch.label, ref = ref,
-                                        short = short.cigars, split.snv = split.snv)
+                                        short = short.cigars, split.snv = split.snv,
+                                        upstream.snv = upstream.snv,
+                                        downstream.snv = downstream.snv)
     if (isTRUE(verbose)) message("Counting variant combinations\n")
     .self$.countCigars(cig_by_run)
     .self$.getInsertions()

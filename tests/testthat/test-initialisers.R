@@ -18,8 +18,8 @@ test_that("readsToTargets correctly separates reads by PCR primer",{
   references <- Biostrings::DNAStringSet(c("AA","CC"))
 
   # test that reads can't be separated without primer ranges
-  csets <- readsToTargets(galnsl, targets, references = references, target.loc = 1,
-                          verbose = FALSE)
+  csets <- suppressWarnings(readsToTargets(galnsl, targets, 
+             references = references, target.loc = 1, verbose = FALSE))
   # There should be no reads as all are ambiguous
   # and chimeras cannot be distinguished with default tolerance of 5
   expect_equal(length(csets), 0)
@@ -33,6 +33,28 @@ test_that("readsToTargets correctly separates reads by PCR primer",{
   # Chimeras can be resolved with zero tolerance
   expect_equal(names(csets[[2]]$crispr_runs[[1]]$chimeras),c("C","C"))
   expect_equal(length(csets[[1]]$crispr_runs[[1]]$chimeras), 0)
+})
+
+
+test_that("Arguments for calling SNVs are passed on",{
+  # There is a nucleotide change 19 bases upstream of the cut site
+  # in one of these sequences
+  bam <- system.file("extdata", "bam/ab1_ptena_wildtype_looking_embryo_1_s.bam",
+                      package="CrispRVariants")
+  reference <- Biostrings::DNAString("GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT")
+  gdl <- GenomicRanges::GRanges("chr17", IRanges(23648469, 23648501),
+           strand = "-")
+  # With default settings, the snv should not be called
+  cset <- readsToTarget(bam, target = gdl, reference = reference,
+           target.loc = 22)
+  expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 0)
+
+  # Re-initialise increasing detection window.
+  # One sequence should now have a SNV
+  cset <- readsToTarget(bam, target = gdl, reference = reference,
+           target.loc = 22, upstream.snv = 20)
+  expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 1)
+
 })
 
 
