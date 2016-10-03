@@ -143,8 +143,7 @@ reference genome, we need to collect a few additional pieces of information
 about the guide sequence and define the area around the guide that we want to
 summarize the mutation spectrum over.
 
-If you already know the coordinates, these can be typed in or put in a BED file
-that can be read in using the **rtracklayer** package.  The import() below command
+
 returns a GRanges object.
 
 ```{r, message=FALSE}
@@ -162,7 +161,7 @@ the expected cut site (used later for labeling variants), after extension, is
 at base 22 with respect to the start of the guide sequence.
 
 ```{r, message=FALSE}
-gdl <- resize(gd, width(gd) + 10, fix = "center")
+gdl <- GenomicRanges::resize(gd, width(gd) + 10, fix = "center")
 ```
 
 With the Bioconductor **BSgenome** packages, the reference sequence itself can be
