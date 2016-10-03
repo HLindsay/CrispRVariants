@@ -26,7 +26,7 @@ least one sample (Default: 0)}
 in at least one sample (Default: 0)}
 }
 \value{
-A DNAStringSet of consensus sequences
+A DNAStringSet of consensus sequences on the positive strand.
 }
 \description{
 Return consensus sequences of variant alleles.  At

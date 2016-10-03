@@ -2,23 +2,21 @@
 % Please edit documentation in R/initialisers.R
 \name{rcAlns}
 \alias{rcAlns}
-\title{Internal CrispRVariants function for deciding whether to reverse
-complement aligned reads}
+\title{Internal CrispRVariants function for determining read orientation}
 \usage{
-rcAlns(target.strand, reverse.complement)
+rcAlns(target.strand, orientation)
 }
 \arguments{
-\item{target.strand}{Strand of the target region}
+\item{target.strand}{The target strand (one of "+","-","*")}
 
-\item{reverse.complement}{Should the alignment be oriented to match the strand}
+\item{orientation}{One of "target", "opposite" and "positive" (Default: "target")}
 }
 \value{
-A logical value indicating whether the narrowed alignment should be reverse complemented.
+A logical value indicating whether reads should be reverse complemented
 }
 \description{
-Guides on the negative strand may be displayed with respect
-to either strand.  This function checks whether a guide is on the negative
-strand and should be reverse complemented.
+Function for determining whether reads should be oriented to the
+target strand, always displayed on the positive strand, or oriented to
 }
 \author{
 Helen Lindsay

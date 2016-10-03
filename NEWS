@@ -1,7 +1,0 @@
-CHANGES IN VERSION 1.1.2
------------------------
-
-NEW FEATURES
-    
-    o new function consensusSeqs returns the consensus sequences
-      of the variant alleles

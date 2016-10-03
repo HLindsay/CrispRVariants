@@ -159,7 +159,7 @@ setGeneric("consensusSeqs", function(obj, ...) {
 #'in at least one sample (Default: 0)
 #'@param top.n  (Integer n) If specified, return variants ranked at least n according
 #' to frequency across all samples (Default: 0, i.e. no cutoff)
-#'@return A DNAStringSet of consensus sequences
+#'@return A DNAStringSet of consensus sequences on the positive strand.
 #'@examples
 #'data("gol_clutch1")
 #'seqs <- consensusSeqs(gol, sample = 2)

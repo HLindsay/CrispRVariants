@@ -79,6 +79,9 @@ CrisprSet$methods(
                         split.snv = TRUE, upstream.snv = 8, downstream.snv = 6,
                         verbose = TRUE, ...){
 
+    # Setting up code to allow for a Cpf1 setting in future
+    enzyme <- "Cas9"
+
     if (isTRUE(verbose)){
       message(sprintf("Initialising CrisprSet %s:%s-%s with %s samples",
                   as.character(seqnames(target)), start(target), end(target),
@@ -102,9 +105,10 @@ CrisprSet$methods(
 
     target <<- target
     ref <<- reference
+
     pars <<- list("match_label" = match.label, "target.loc" = target.loc,
                   "mismatch_label" = mismatch.label, "renumbered" = renumbered,
-                  "all_chimeric" = FALSE)
+                  "all_chimeric" = FALSE, "rc" = rc, "enzyme" = enzyme)
 
     crispr_runs <<- crispr.runs
 
@@ -113,6 +117,7 @@ CrisprSet$methods(
     }else {
       names(.self$crispr_runs) <- names
     }
+    
     nonempty_runs <- sapply(.self$crispr_runs, function(x) {
       ! ( length(x$alns) == 0 & length(x$chimeras) == 0 )
       })
@@ -129,7 +134,7 @@ CrisprSet$methods(
     }
 
     if (isTRUE(verbose)) message("Renaming cigar strings\n")
-
+ 
     cig_by_run <- .self$.setCigarLabels(renumbered = renumbered, target.loc = target.loc,
                                         target_start = start(target), target_end = end(target),
                                         rc = rc, match_label = match.label,
@@ -161,9 +166,23 @@ CrisprSet$methods(
         stop("Must specify target.loc (cut site), target_start, target_end and rc
              for renumbering")
       }
-      g_to_t <- .self$.genomeToTargetLocs(target.loc, target_start, target_end, rc)
+      g_to_t <- .self$.genomeToTargetLocs(target.loc, target_start, target_end, 
+                             as.character(strand(.self$target)) == "+")
       }
+      
     cut.site <- ifelse(is.na(target.loc), 17, target.loc)
+    
+    # rc means "display on negative strand"
+    # If the guide is being displayed on the opposite strand, upstream and
+    # downstream are reversed
+    is_neg <- as.character(strand(target)) == "-"
+    if (! rc == is_neg){
+      temp <- upstream.snv
+      upstream.snv <- downstream.snv
+      downstream.snv <- upstream.snv
+      # In getCigarLabels, the target.loc is only used for the snv position
+      cut.site <- width(.self$target) - cut.site
+    }
 
     # This section is slow
     cig_by_run <- lapply(.self$crispr_runs,
@@ -837,29 +856,35 @@ Return value:
     alns <- .self$makePairwiseAlns(cig_freqs)
     dots <- list(...)
 
+    # Set the location for the vertical line indicating the zero point
     tloc <- ifelse(is.na(.self$pars$target.loc), 17, .self$pars$target.loc)
+        
     ins.sites <- .self$insertion_sites
 
     # Consistency - is it still possible to print w.r.t the forward strand?
     # If the strand is -ve, the region will be reverse complemented,
     # "start" for the plot must be reversed
-    if (as.character(strand(.self$target) == "-")){
+    
+    # Check: Is it possible to display the insertions reverse complemented?
+    if (isTRUE(.self$pars$rc)){
+    #if (as.character(strand(.self$target) == "-")){
       temp <- seq_along(1:width(.self$target))
       starts <- rev(temp) +1 # +1 because considering the leftmost point
       names(starts) <- temp
       ins.sites$start <- starts[ins.sites$start]
       ins.sites$seq <- as.character(reverseComplement(DNAStringSet(ins.sites$seq)))
     }
+    
 
     if (isTRUE(renumbered)){
       genomic_coords <- c(start(.self$target):end(.self$target))
       target_coords <- .self$genome_to_target[as.character(genomic_coords)]
-      if (as.character(strand(.self$target)) == "-"){
+      if (isTRUE(.self$pars$rc)){
+      #if (as.character(strand(.self$target)) == "-"){
         target_coords <- rev(target_coords)
       }
       xbreaks = which(target_coords %% 5 == 0 | abs(target_coords) == 1)
       target_coords <- target_coords[xbreaks]
-
       args <- list(obj = .self$ref, alns = alns, ins.sites = ins.sites,
                    xtick.labs = target_coords, xtick.breaks = xbreaks,
                    target.loc =  tloc, add.other = add.other)
@@ -867,10 +892,23 @@ Return value:
       args <- list(obj = .self$ref, alns = alns, ins.sites = ins.sites,
                    target.loc = tloc, add.other = add.other)
     }
+    
+    # If displaying the reverse complement of the guide, target loc is to the left
+    strd <- as.character(strand(.self$target))
+    #
+    reverse_tloc <- (strd == "+" & isTRUE(.self$pars$rc)) |
+                    (strd == "-" & ! isTRUE(.self$pars$rc))
+    
+    if (isTRUE(reverse_tloc)){
+        tloc <- width(.self$target) - tloc
+        args["target.loc"] <- tloc
+        args["pam.start"] <- tloc - 5
+        args["pam.end"] <- tloc - 3
+        args[["guide.loc"]] <- IRanges::IRanges(tloc - 5, tloc + 17)
+    }
 
     args <- modifyList(args, dots)
     p <- do.call(plotAlignments, args)
-
     return(p)
   },
 
@@ -979,15 +1017,17 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # use the full cigars for sorting
     # Do this just for the alns to be displayed?
     temp <- consensusAlleles(cig_freqs, return_nms = TRUE)
+    
     alns <- seqsToAln(temp$split_nms, temp$seqs, target = .self$target,
-                 aln_start = temp$starts, ...)
+                 aln_start = temp$starts, 
+                 reverse_complement = .self$pars$rc, ...)
 
     names(alns) <- temp$split_labels
     alns
   },
 
 
-  .genomeToTargetLocs = function(target.loc, target_start, target_end, rc = FALSE,
+  .genomeToTargetLocs = function(target.loc, target_start, target_end, plus_strand, 
                                  gs = NULL, ge = NULL){
     # target.loc should be relative to the start of the target sequence, even if the
     # target is on the negative strand
@@ -1001,20 +1041,24 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # After: -5 -4 -3 -2 -1  1  2  3
     # Left =  original - target.loc - 1
     # Right = original - target.loc
+    
     if (is.null(gs) | is.null(ge)){
       gs <- min(sapply(.self$crispr_runs, function(x) min(start(x$alns))))
       ge <- max(sapply(.self$crispr_runs, function(x) max(end(x$alns))))
     }
-    if (isTRUE(rc)){
+    
+    if (! isTRUE(plus_strand)){
       tg <- target_end - (target.loc - 1)
       new_numbering <- rev(c(seq(-1*(ge - (tg -1)),-1), c(1:(tg - gs))))
-      names(new_numbering) <- c(gs:ge)
 
     } else {
       tg <- target_start + target.loc - 1
       new_numbering <- c(seq(-1*(tg - (gs-1)),-1), c(1:(ge - tg)))
-      names(new_numbering) <- c(gs:ge)
+
     }
+    
+    names(new_numbering) <- c(gs:ge)
+
     .self$field("genome_to_target", new_numbering)
     new_numbering
   }

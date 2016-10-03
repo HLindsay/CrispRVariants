@@ -16,18 +16,19 @@ readsToTarget(reads, target, ...)
 \S4method{readsToTarget}{GAlignments,GRanges}(reads, target, ...,
   reverse.complement = TRUE, chimeras = NULL, collapse.pairs = FALSE,
   use.consensus = FALSE, store.chimeras = FALSE, verbose = TRUE,
-  name = NULL)
+  name = NULL, orientation = c("target", "opposite", "positive"))
 
 \S4method{readsToTarget}{GAlignmentsList,GRanges}(reads, target, ...,
   reference = reference, names = NULL, reverse.complement = TRUE,
   target.loc = 17, chimeras = NULL, collapse.pairs = FALSE,
-  use.consensus = FALSE, verbose = TRUE)
+  use.consensus = FALSE, orientation = c("target", "opposite", "positive"),
+  verbose = TRUE)
 
 \S4method{readsToTarget}{character,GRanges}(reads, target, ..., reference,
   reverse.complement = TRUE, target.loc = 17, exclude.ranges = GRanges(),
   exclude.names = NA, chimeras = c("count", "exclude", "ignore", "merge"),
-  collapse.pairs = FALSE, use.consensus = FALSE, names = NULL,
-  verbose = TRUE)
+  collapse.pairs = FALSE, use.consensus = FALSE, orientation = c("target",
+  "opposite", "positive"), names = NULL, verbose = TRUE)
 
 readsToTargets(reads, targets, ...)
 
@@ -35,14 +36,15 @@ readsToTargets(reads, targets, ...)
   primer.ranges = NULL, target.loc = 17, reverse.complement = TRUE,
   collapse.pairs = FALSE, use.consensus = FALSE, ignore.strand = TRUE,
   names = NULL, bpparam = BiocParallel::SerialParam(),
-  chimera.to.target = 5, verbose = TRUE)
+  orientation = c("target", "opposite", "positive"), chimera.to.target = 5,
+  verbose = TRUE)
 
 \S4method{readsToTargets}{GAlignmentsList,GRanges}(reads, targets, ...,
   references, primer.ranges = NULL, target.loc = 17,
   reverse.complement = TRUE, collapse.pairs = FALSE,
   use.consensus = FALSE, ignore.strand = TRUE, names = NULL,
   bpparam = BiocParallel::SerialParam(), chimera.to.target = 5,
-  verbose = TRUE)
+  orientation = c("target", "opposite", "positive"), verbose = TRUE)
 }
 \arguments{
 \item{reads}{A GAlignments object, or a character vector of the filenames}
@@ -51,15 +53,19 @@ readsToTargets(reads, targets, ...)
 
 \item{...}{Extra arguments for initialising CrisprSet}
 
-\item{reverse.complement}{Should the alignments be oriented to match
-the strand of the target? (Default: TRUE)}
+\item{reverse.complement}{(Default: TRUE)  Should the alignments be
+oriented to match the strand of the target? If TRUE, targets located 
+strand and targets on the negative strand with respect to the 
+negative strand. If FALSE, the parameter 'orientation' must be set
+to determine the orientation.  
+'reverse.complement' will be replaced by 'orientation' in a later release.}
 
 \item{chimeras}{Flag to determine how chimeric reads are treated.  One of
 "ignore", "exclude", and "merge".  Default "count", "merge" not implemented yet}
 
-\item{collapse.pairs}{If reads are paired, should pairs be collapsed?  (Default: FALSE)
-Note: only collapses primary alignments, and assumes that there is only one primary
-alignment per read.  May fail with blat alignments converted to bam.}
+\item{collapse.pairs}{If reads are paired, should pairs be collapsed? 
+(Default: FALSE) Note: only collapses primary alignments, 
+and assumes that there is only one primary alignment per read.}
 
 \item{use.consensus}{Take the consensus sequence for non-matching pairs? If FALSE,
 the sequence of the first read is used.  Can be very slow. (Default: FALSE)}
@@ -69,6 +75,11 @@ the sequence of the first read is used.  Can be very slow. (Default: FALSE)}
 \item{verbose}{Print progress and statistics (Default: TRUE)}
 
 \item{name}{An experiment name for the reads.  (Default: NULL)}
+
+\item{orientation}{One of "target" (reads are displayed on the same
+strand as the target) "opposite" (reads are displayed on the opposite)
+strand from the target or "positive" (reads are displayed on the forward
+strand regardless of the strand of the target)   (Default:"target")}
 
 \item{reference}{The reference sequence}
 

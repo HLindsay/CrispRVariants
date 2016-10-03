@@ -100,6 +100,7 @@ setMethod("plotAlignments", signature("DNAString"),
            tile.height = 0.55, max.insertion.size = 20, min.insertion.freq = 5,
            line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE){
 
+
   # Insertion locations are determined by matching ins.sites$cigar with names(alns)
   ref <- obj
   m <- transformAlnsToLong(ref, alns, add.other = add.other)
@@ -168,7 +169,7 @@ setMethod("plotAlignments", signature("DNAString"),
     #                           ymin = pam_df$ymin + 1, ymax = pam_df$ymax + 1)
 
   }
-
+ 
   # Make a data frame of insertion locations
   ins_ord <- match(ins.sites$cigar, nms)
 
@@ -184,7 +185,7 @@ setMethod("plotAlignments", signature("DNAString"),
 
     ## Merge multiple insertions at single plotting location, format to fixed width
     xy_locs <- paste(ins_points$x, ins_points$y, sep = "_")
-
+  
     # Remove low frequency alleles
     temp <- rowsum(ins_points$count, xy_locs)
     totals <- as.vector(temp)
@@ -257,7 +258,8 @@ setMethod("plotAlignments", signature("DNAString"),
   if (isTRUE(show.plot)){
     print(p)
   }
-  return(p)
+  p
+  #return(p)
 })
 
 

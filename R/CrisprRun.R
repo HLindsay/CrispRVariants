@@ -217,9 +217,12 @@ Input parameters:
     } else {
       glocs <- start(rranges)
     }
+    
     temp <- paste(genome_to_target[as.character(unlist(glocs))],
                   unlist(temp[keep]), sep = ":")
+        
     temp <- as.list(relist(temp, IRanges::PartitioningByEnd(cumsum(sum(keep)))))
+          
     complex <- sum(keep) > 1
 
     if (isTRUE(rc)){
@@ -229,6 +232,7 @@ Input parameters:
     }
     temp[sum(keep) == 0] <- match.label
     renamed <- as.character(temp)
+    
     if (isTRUE(separate.snv)){
       renamed <- .self$.splitNonIndel(ref, renamed, rc, match_label = match.label,
                                     mismatch_label = mismatch.label,

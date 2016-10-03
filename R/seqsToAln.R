@@ -13,11 +13,14 @@
 #'@param del_char The character to represent deleted bases. Default "-"
 #'@param aln_start Genomic start locations of aligned sequences. Should be
 #'used in conjunction with target_start and target_end.
+#'@param reverse_complement (Default: FALSE)
 #'@return The sequences with insertions collapsed and deletions padded
 #'@rdname seqsToAln
-seqsToAln <- function(cigar, dnaseq, target, del_char = "-", aln_start = NULL){
+seqsToAln <- function(cigar, dnaseq, target, del_char = "-", 
+                      aln_start = NULL, reverse_complement = FALSE){
   # Additional trimming is necessary because deletion operations may overhang
   # boundaries of target region
+  
   target_start <- start(target)
   target_end <- end(target)
   strand <- as.character(strand(target))
@@ -40,7 +43,8 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-", aln_start = NULL){
     }
     result <- subseq(result, trim_start,trim_end)
   }
-  if (strand == "-"){
+  
+  if (isTRUE(reverse_complement)){
     result <- reverseComplement(result)
   }
   result <- as.character(result)

@@ -28,14 +28,24 @@ setGeneric("readsToTarget", function(reads, target, ...) {
 
 
 #'@param name An experiment name for the reads.  (Default: NULL)
-#'@param reverse.complement Should the alignments be oriented to match
-#'the strand of the target? (Default: TRUE)
-#'@param collapse.pairs  If reads are paired, should pairs be collapsed?  (Default: FALSE)
-#'Note: only collapses primary alignments, and assumes that there is only one primary
-#'alignment per read.  May fail with blat alignments converted to bam.
+#'@param reverse.complement (Default: TRUE)  Should the alignments be
+#' oriented to match the strand of the target? If TRUE, targets located 
+#  on the postive strand are displayed with respect to the postive 
+#' strand and targets on the negative strand with respect to the 
+#' negative strand. If FALSE, the parameter 'orientation' must be set
+#' to determine the orientation.  
+#' 'reverse.complement' will be replaced by 'orientation' in a later release. 
+#'@param collapse.pairs  If reads are paired, should pairs be collapsed? 
+#' (Default: FALSE) Note: only collapses primary alignments, 
+#' and assumes that there is only one primary alignment per read.
+# May fail with blat alignments converted to bam.
 #'@param use.consensus Take the consensus sequence for non-matching pairs? If FALSE,
 #'the sequence of the first read is used.  Can be very slow. (Default: FALSE)
 #'@param store.chimeras Should chimeric reads be stored?  (Default: FALSE)
+#'@param orientation One of "target" (reads are displayed on the same
+#' strand as the target) "opposite" (reads are displayed on the opposite)
+#' strand from the target or "positive" (reads are displayed on the forward
+#' strand regardless of the strand of the target)   (Default:"target") 
 #'@param verbose Print progress and statistics (Default: TRUE)
 #'@return (signature("GAlignments", "GRanges")) A \code{\link{CrisprRun}} object
 #'@examples
@@ -58,25 +68,48 @@ setGeneric("readsToTarget", function(reads, target, ...) {
 setMethod("readsToTarget", signature("GAlignments", "GRanges"),
           function(reads, target, ..., reverse.complement = TRUE,
                    chimeras = NULL, collapse.pairs = FALSE, use.consensus = FALSE,
-                   store.chimeras = FALSE, verbose = TRUE, name = NULL){
+                   store.chimeras = FALSE, verbose = TRUE, name = NULL,
+                   orientation = c("target","opposite","positive")){
 
             if (length(target) > 1){
               stop("readsToTarget accepts a single target range")
             }
 
+            orientation <- match.arg(orientation)
+            
+            if (reverse.complement == FALSE & orientation == "target"){
+              warning(paste0("Conflicting choice of 'reverse.complement'",
+                             " and 'orientation'.\nOrienting to the target",
+                             " strand.\nSpecify 'orientation' for additional",
+                             " options."))
+            }
+
             dots <- list(...)
             keep.unpaired <- TRUE
             if ("keep.unpaired" %in% names(dots)){
-              keep.unpaired <- dots["keep.unpaired"]
+                keep.unpaired <- dots["keep.unpaired"]
             }
-
+            
+            # Choose which strand to orient reads to
+            if (reverse.complement & as.character(strand(target)) == "*"){
+             message(paste0("Target does not have a strand, ",
+                            "but reverse.complement is TRUE.\n",
+                            "Orienting reads to reference strand."))
+              rc = FALSE
+            }else {
+              rc <- rcAlns(as.character(strand(target)), orientation)
+            }
+            
+            # If there are no non-chimeric reads, chimeras can still be stored
             if (length(reads) == 0){
               if (length(chimeras) == 0) {return(NULL)}
               crun <- CrisprRun(reads, target, IRanges::IRangesList(), rc = rc,
-                                name = name, chimeras = chimeras, verbose = verbose)
+                                name = name, chimeras = chimeras, 
+                                verbose = verbose)
               return(crun)
             }
 
+            # Check if alignments are paired and should be collapsed
             if (isTRUE(collapse.pairs)){
               if (is.null(names(reads)) |  ! ("flag" %in% names(mcols(reads))) ){
                 stop("Reads must include names and bam flags for collapsing pairs")
@@ -104,7 +137,7 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
                           length(bam), length(reads)))
             }
 
-            # If bam and or chimeras are empty, no further calculation needed
+            # If bam and chimeras are empty, no further calculation needed
             if (length(bam) == 0 & length(chimeras) == 0) return(NULL)
 
             if (length(bam) == 0){
@@ -114,13 +147,6 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
             }
 
             # If bam is non-empty, orient and narrow the reads to the target
-            if (reverse.complement & as.character(strand(target)) == "*"){
-             message(paste0("Target does not have a strand, but reverse.complement is TRUE. ",
-                            "Orienting reads to reference strand."))
-              rc = FALSE
-            }else{
-              rc <- rcAlns(as.character(strand(target)), reverse.complement)
-            }
 
             # narrow aligned reads
             result <- narrowAlignments(bam, target, reverse.complement = rc,
@@ -159,10 +185,15 @@ setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
           function(reads, target, ..., reference = reference,
                    names = NULL, reverse.complement = TRUE, target.loc = 17,
                    chimeras = NULL, collapse.pairs = FALSE, use.consensus = FALSE,
+                   orientation = c("target","opposite","positive"),
                    verbose = TRUE){
 
     # Deal with potentially empty chimeras
     # check that lengths of reads and chimeras are either 0 or the same
+    
+    # NOTE - OVERWRITING REVERSE.COMPLEMENT
+    #reverse.complement <- match.arg(orientation)
+    
     nreads <- length(reads)
     nch <- length(chimeras)
     if (nreads > 0 & nch > 0 & ! nreads == nch){
@@ -171,7 +202,8 @@ setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
 
     cset <- alnsToCrisprSet(reads, reference, target, reverse.complement,
                             collapse.pairs, names, use.consensus, target.loc,
-                            verbose, chimeras = chimeras,  ...)
+                            verbose, chimeras = chimeras,
+                            orientation = orientation, ...)
     cset
 })
 
@@ -191,6 +223,7 @@ setMethod("readsToTarget", signature("character", "GRanges"),
                    target.loc = 17, exclude.ranges = GRanges(), exclude.names = NA,
                    chimeras = c("count","exclude","ignore", "merge"),
                    collapse.pairs = FALSE, use.consensus = FALSE,
+                   orientation = c("target","opposite","positive"),
                    names = NULL, verbose = TRUE){
 
             # Make sure the reference sequence consists of one sequence
@@ -225,9 +258,11 @@ setMethod("readsToTarget", signature("character", "GRanges"),
             }
             names <- as.character(names)
 
+            orientation <- match.arg(orientation)
             cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
                                     collapse.pairs, names, use.consensus, target.loc,
-                                    verbose = verbose, chimeras = chimeras, ...)
+                                    verbose = verbose, chimeras = chimeras, 
+                                    orientation = orientation, ...)
 
             cset
           })
@@ -255,9 +290,11 @@ setGeneric("readsToTargets", function(reads, targets, ...) {
 #'@rdname readsToTarget
 setMethod("readsToTargets", signature("character", "GRanges"),
           function(reads, targets, ..., references, primer.ranges = NULL,
-                   target.loc = 17, reverse.complement = TRUE, collapse.pairs = FALSE,
-                   use.consensus = FALSE, ignore.strand = TRUE,
-                   names = NULL, bpparam = BiocParallel::SerialParam(),
+                   target.loc = 17, reverse.complement = TRUE,
+                   collapse.pairs = FALSE, use.consensus = FALSE,
+                   ignore.strand = TRUE, names = NULL,
+                   bpparam = BiocParallel::SerialParam(),
+                   orientation = c("target","opposite","positive"),
                    chimera.to.target = 5, verbose = TRUE){
 
             dummy <- .checkReadsToTargets(targets, primer.ranges, references)
@@ -285,13 +322,15 @@ setMethod("readsToTargets", signature("character", "GRanges"),
            bams <- GAlignmentsList(bams)
            if (collapse.pairs == FALSE) dummy <- .checkForPaired(bams)
 
+           orientation <- match.arg(orientation)
            result <- readsToTargets(bams, targets, references = references,
                        target.loc = target.loc, verbose = verbose,
                        reverse.complement = reverse.complement,
                        ignore.strand = ignore.strand,
                        collapse.pairs = collapse.pairs, names = names,
                        bpparam = bpparam, use.consensus = use.consensus,
-                       chimera.to.target = chimera.to.target)
+                       chimera.to.target = chimera.to.target,
+                       orientation = orientation)
           result
 
           })
@@ -300,10 +339,17 @@ setMethod("readsToTargets", signature("character", "GRanges"),
 #'@rdname readsToTarget
 setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
           function(reads, targets, ..., references, primer.ranges = NULL,
-                   target.loc = 17, reverse.complement = TRUE, collapse.pairs = FALSE,
-                   use.consensus = FALSE, ignore.strand = TRUE,
-                   names = NULL, bpparam = BiocParallel::SerialParam(),
-                   chimera.to.target = 5, verbose = TRUE){
+                   target.loc = 17, reverse.complement = TRUE, 
+                   collapse.pairs = FALSE, use.consensus = FALSE,
+                   ignore.strand = TRUE, names = NULL, 
+                   bpparam = BiocParallel::SerialParam(),
+                   chimera.to.target = 5, 
+                   orientation = c("target", "opposite", "positive"),
+                   verbose = TRUE){
+
+    # To do:
+    # Currently this returns a list with the non-empty CrisprSets
+    # consider making the list the length of the supplied targets
 
     dummy <- .checkReadsToTargets(targets, primer.ranges, references)
     if (collapse.pairs == FALSE) dummy <- .checkForPaired(reads)
@@ -315,6 +361,8 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
         names <- sprintf("Sample %s",seq_along(reads))
       }
     }
+
+    orientation <- match.arg(orientation)
 
     byPCR <- BiocParallel::bplapply(reads, function(bam){
 
@@ -354,7 +402,7 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
       bamByPCR <- as.list(rep(NA, length(targets)))
       names(bamByPCR) <- seq_along(targets)
       for (nm in names(splits)){
-        bamByPCR[nm] <- bam[splits[[nm]]]
+        bamByPCR[[nm]] <- bam[splits[[nm]]]
       }
       byPCR <- list(bamByPCR = bamByPCR, chimerasByPCR = chimerasByPCR)
       byPCR
@@ -364,6 +412,7 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
     to_keep <- which(lapply(byPCR, length) > 0)
     byPCR <- byPCR[to_keep]
     names <- names[to_keep]
+    
     if (length(names) == 0){
       stop("No files contain on target reads")
     }
@@ -388,10 +437,11 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
       if (isTRUE(verbose)){
         message(sprintf("\n\nWorking on target %s\n", names(tgt)))
       }
-
+      
       cset <- alnsToCrisprSet(bams, ref, tgt, reverse.complement,
                               collapse.pairs, names, use.consensus, target.loc,
-                              verbose, chimeras = chs,  ...)
+                              verbose, chimeras = chs,
+                              orientation = orientation, ...)
     }, BPPARAM = bpparam)
 
     if (length(result) == 0){
@@ -517,27 +567,27 @@ separateChimeras <- function(bam, targets, tolerance = 5,
 
 alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
                             collapse.pairs, names, use.consensus, target.loc,
-                            verbose, chimeras = NULL,
+                            verbose, orientation, chimeras = NULL,
                             store.chimeras = FALSE, ...){
 
-  crispr.runs <- lapply(seq_along(alns), function(i){
-    aln <- alns[[i]]
+    crispr.runs <- lapply(seq_along(alns), function(i){
+      aln <- alns[[i]]
 
-    if (!class(aln) == "GAlignments") {
-      aln <- GenomicAlignments::GAlignments()
-    }
+      if (!class(aln) == "GAlignments") {
+        aln <- GenomicAlignments::GAlignments()
+      }
 
-    chim <- chimeras[[i]]
-    if (is.null(chim)) {chim <- GenomicAlignments::GAlignments()}
-    crun <- readsToTarget(aln, target = target,
+      chim <- chimeras[[i]]
+      if (is.null(chim)) {chim <- GenomicAlignments::GAlignments()}
+      crun <- readsToTarget(aln, target = target,
                 reverse.complement = reverse.complement, chimeras = chim,
                 collapse.pairs = collapse.pairs, use.consensus = use.consensus,
-                verbose = verbose, name = names[i])
-    crun
-  })
+                verbose = verbose, name = names[i], orientation = orientation)
+      crun
+    })
 
-  to_rm <- sapply(crispr.runs, is.null)
-  if (any(to_rm)){
+    to_rm <- sapply(crispr.runs, is.null)
+    if (any(to_rm)){
     if (verbose){
       rm_nms <- paste0(names[to_rm], collapse = ",", sep = "\n")
       message(sprintf("Excluding samples that have no on target reads:\n%s",
@@ -551,11 +601,21 @@ alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
     }
   }
 
-  rc <- rcAlns(as.character(strand(target)),reverse.complement)
+    rc <- rcAlns(as.character(strand(target)), orientation)
 
-  cset <- CrisprSet(crispr.runs, reference, target, rc = rc, target.loc = target.loc,
-                    verbose = verbose, names = names, ...)
-  cset
+    # The reference is with respect to the guide.  If the opposite
+    # strand is being displayed, reverse the reference.
+    # For display wrt target, rc is TRUE for -ve, FALSE for +v
+    is_neg <- as.character(strand(target)) == "-"
+    
+    if (! (is_neg == rc)){
+      reference <- Biostrings::reverseComplement(reference)
+    }
+    
+    cset <- CrisprSet(crispr.runs, reference, target, rc = rc,
+                      target.loc = target.loc, 
+                      verbose = verbose, names = names, ...)
+    cset
 }
 
 
@@ -647,18 +707,29 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
 }
 
 
-#'@title Internal CrispRVariants function for deciding whether to reverse
-#'complement aligned reads
-#'@description Guides on the negative strand may be displayed with respect
-#' to either strand.  This function checks whether a guide is on the negative
-#' strand and should be reverse complemented.
-#'@param target.strand Strand of the target region
-#'@param reverse.complement Should the alignment be oriented to match the strand
-#'@return A logical value indicating whether the narrowed alignment should be reverse complemented.
+#'@title Internal CrispRVariants function for determining read orientation
+#'@description Function for determining whether reads should be oriented to the
+#'target strand, always displayed on the positive strand, or oriented to 
+# the strand opposite the target.
+#'@param target.strand  The target strand (one of "+","-","*") 
+#'@param orientation One of "target", "opposite" and "positive" (Default: "target")
+#'@return A logical value indicating whether reads should be reverse complemented
 #'@author Helen Lindsay
-rcAlns <- function(target.strand, reverse.complement){
-  if (target.strand == "-" & isTRUE(reverse.complement)) return(TRUE)
-  FALSE
+rcAlns <- function(target.strand, orientation){
+    if (orientation %in% c("opposite","target") &  target.strand == "*"){
+        warning(paste0("Target does not have a strand, cannot choose", 
+                "'opposite' orientation.\nOrienting reads to reference strand."))
+      return(FALSE)
+    }
+    if (orientation == "positive") return(FALSE)
+    if (orientation == "target"){
+      if (target.strand == "-") return(TRUE)
+    } 
+    if (orientation == "opposite"){
+      if (target.strand == "+") return(TRUE)
+    } 
+    return(FALSE)
+              
 }
 
 

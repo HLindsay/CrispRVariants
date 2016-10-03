@@ -4,7 +4,8 @@
 \alias{seqsToAln}
 \title{Creates a text alignment from a set of cigar strings}
 \usage{
-seqsToAln(cigar, dnaseq, target, del_char = "-", aln_start = NULL)
+seqsToAln(cigar, dnaseq, target, del_char = "-", aln_start = NULL,
+  reverse_complement = FALSE)
 }
 \arguments{
 \item{cigar}{A list of cigar strings to align}
@@ -18,6 +19,8 @@ the target region are trimmed to exactly match it.}
 
 \item{aln_start}{Genomic start locations of aligned sequences. Should be
 used in conjunction with target_start and target_end.}
+
+\item{reverse_complement}{(Default: FALSE)}
 }
 \value{
 The sequences with insertions collapsed and deletions padded

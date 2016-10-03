@@ -1,7 +1,7 @@
 ---
 title: "CrispRVariants User Guide"
 author: "Helen Lindsay, Mark Robinson"
-date: "7 October 2015"
+date: "3rd October 2016"
 output: 
   BiocStyle::pdf_document:
     fig_caption: true
@@ -90,8 +90,8 @@ dummy <- mapply( function(u,v,w) {
 
 We will collect sequences from each embryo into the same FASTQ file.  Note that
 abifToFastq *appends* output to existing files where possible.  In this
-experiment, there are `r length(unique(ab1_fnames))` sequences, which will
-be output to `r length(unique(fq_fnames))` files:
+example, there is only `r length(unique(ab1_fnames))` sequence, which will
+be output to `r length(unique(fq_fnames))` file:
  
 ```{r, message=FALSE, warning = FALSE}
 length(unique(ab1_fnames))
@@ -143,8 +143,9 @@ reference genome, we need to collect a few additional pieces of information
 about the guide sequence and define the area around the guide that we want to
 summarize the mutation spectrum over.
 
-
-returns a GRanges object.
+If you already know the coordinates, these can be typed in or put in a BED file
+that can be read in using the **rtracklayer** package.  The import() commmand
+below returns a GRanges object.
 
 ```{r, message=FALSE}
 library(rtracklayer)
@@ -280,7 +281,7 @@ the transcript plot is  annotated with the guide location. Arguments for
 plotAlignments() and plotFreqHeatmap() can be passed to plotVariants() as lists
 named plotAlignments.args and plotFreqHeatmap.args, respectively.
 
-```{r}
+```{r, message = FALSE}
 # The gridExtra package is required to specify the legend.key.height 
 # as a "unit" object.  It is not needed to call plotVariants() with defaults
 library(gridExtra)
@@ -290,7 +291,7 @@ group <- md$Group
 ```
 
 
-```{r, fig.width = 8.5, fig.height = 9.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
+```{r, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
 p <- plotVariants(crispr_set, txdb = txdb, gene.text.size = 8, 
     row.ht.ratio = c(1,8), col.wdth.ratio = c(4,2),
     plotAlignments.args = list(line.weight = 0.5, ins.size = 2, 
@@ -344,6 +345,24 @@ We see above that sample ptena 4 has an efficiency of 80%, i.e. 4 variant sequen
 plus one sequence "6:1D" which is counted as a non-variant sequence as it also
 occurs in the control sample.
 
+## Get consensus alleles
+
+The consensus sequences for variant alleles can be accessed using **consensusSeqs**.
+This function allows filtering by variant frequency or read count, as for 
+**plotAlignments** and **plotFreqHeatmap**.  Consensus alleles are returned with
+respect to the positive strand.
+
+```{r}
+sqs <- consensusSeqs(crispr_set)
+sqs
+
+# The ptena guide is on the negative strand.
+# Confirm that the reverse complement of the "no variant" allele
+# matches the reference sequence:
+Biostrings::reverseComplement(sqs[["no variant"]]) == reference
+```
+
+
 ## Plot chimeric alignments
 
 When deciding whether chimeric alignments should be considered as variant sequences,
@@ -377,6 +396,33 @@ mutationEfficiency(crispr_set, filter.cols = "control", exclude.cols = "control"
 We see that the mutation effiency for "ptena 4" is now 75%, i.e. 3 genuine variant
 sequences, 1 sequence counted as "non-variant" because it occurs in the control,
 and the chimeric read excluded completely
+
+# Choosing the strand for display
+
+**CrispRVariants** is capable of tabulating variants with respect to either
+strand. By default, variant alleles are displayed with respect to the target
+strand, i.e. sequences for a guide on the negative strand are reverse complemented
+for display.  For some applications it may be preferable to display the variants
+on the opposite strand, for example if a guide on the negative strand is used 
+to target a gene on the positive strand.  The display strand is controlled using
+the **orientation** parameter in **readsToTarget(s)** during initialization.
+
+To illustrate, we will plot the variants for *ptena* on the positive strand.
+Note that the only changes to the initialization code is the *orientation*
+parameter.  In particular, the *target.loc* is still specified with respect
+to the guide sequence and the reference is still the guide sequence, not
+its reverse complement.
+
+```{r, fig.width = 8.5, fig.height = 7.5, message = FALSE}
+
+crispr_set_rev <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                                names = md$Short.name, target.loc = 22, 
+                                orientation = "opposite")
+plotVariants(crispr_set_rev)
+```
+
+Note that variants are labelled with respect to their leftmost coordinate,
+so the labelled variant location changes when plotting on the opposite strand.
 
 # Changing the appearance of plots
 
