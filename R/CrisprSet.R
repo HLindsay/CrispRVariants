@@ -135,13 +135,16 @@ CrisprSet$methods(
 
     if (isTRUE(verbose)) message("Renaming cigar strings\n")
  
-    cig_by_run <- .self$.setCigarLabels(renumbered = renumbered, target.loc = target.loc,
-                                        target_start = start(target), target_end = end(target),
-                                        rc = rc, match_label = match.label,
-                                        mismatch_label = mismatch.label, ref = ref,
-                                        short = short.cigars, split.snv = split.snv,
-                                        upstream.snv = upstream.snv,
-                                        downstream.snv = downstream.snv)
+    cig_by_run <- .self$.setCigarLabels(renumbered = renumbered,
+                               target.loc = target.loc, 
+                               target_start = start(target), 
+                               target_end = end(target),
+                               rc = rc, match_label = match.label,
+                               mismatch_label = mismatch.label, ref = ref,
+                               short = short.cigars, split.snv = split.snv,
+                               upstream.snv = upstream.snv,
+                               downstream.snv = downstream.snv)
+                               
     if (isTRUE(verbose)) message("Counting variant combinations\n")
     .self$.countCigars(cig_by_run)
     .self$.getInsertions()
@@ -171,7 +174,8 @@ CrisprSet$methods(
       }
       
     cut.site <- ifelse(is.na(target.loc), 17, target.loc)
-    
+
+
     # rc means "display on negative strand"
     # If the guide is being displayed on the opposite strand, upstream and
     # downstream are reversed
@@ -817,8 +821,10 @@ See also:
     return(p)
   },
 
-  plotVariants = function(min.freq = 0, min.count = 0, top.n = nrow(.self$cigar_freqs),
-                   renumbered = .self$pars["renumbered"], add.other = add.other, ...){
+  plotVariants = function(min.freq = 0, min.count = 0,
+                   top.n = nrow(.self$cigar_freqs),
+                   renumbered = .self$pars["renumbered"],
+                   add.other = add.other, ...){
 '
 Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
@@ -861,13 +867,7 @@ Return value:
         
     ins.sites <- .self$insertion_sites
 
-    # Consistency - is it still possible to print w.r.t the forward strand?
-    # If the strand is -ve, the region will be reverse complemented,
-    # "start" for the plot must be reversed
-    
-    # Check: Is it possible to display the insertions reverse complemented?
     if (isTRUE(.self$pars$rc)){
-    #if (as.character(strand(.self$target) == "-")){
       temp <- seq_along(1:width(.self$target))
       starts <- rev(temp) +1 # +1 because considering the leftmost point
       names(starts) <- temp
@@ -880,7 +880,6 @@ Return value:
       genomic_coords <- c(start(.self$target):end(.self$target))
       target_coords <- .self$genome_to_target[as.character(genomic_coords)]
       if (isTRUE(.self$pars$rc)){
-      #if (as.character(strand(.self$target)) == "-"){
         target_coords <- rev(target_coords)
       }
       xbreaks = which(target_coords %% 5 == 0 | abs(target_coords) == 1)
@@ -893,9 +892,9 @@ Return value:
                    target.loc = tloc, add.other = add.other)
     }
     
-    # If displaying the reverse complement of the guide, target loc is to the left
+    # If displaying the reverse complement, target loc is to the left
     strd <- as.character(strand(.self$target))
-    #
+
     reverse_tloc <- (strd == "+" & isTRUE(.self$pars$rc)) |
                     (strd == "-" & ! isTRUE(.self$pars$rc))
     
@@ -916,7 +915,8 @@ Return value:
     # Used by plotVariants for getting a table of insertions
 
     if (with_cigars == FALSE){
-      all_ins <- do.call(rbind, lapply(.self$crispr_runs, function(x) x$insertions))
+      all_ins <- do.call(rbind, lapply(.self$crispr_runs,
+                                       function(x) x$insertions))
     } else {
       all_ins <- do.call(rbind, lapply(.self$crispr_runs, function(x) {
         ik <- x$ins_key
@@ -955,10 +955,13 @@ if return_nms = TRUE
     # TO DO:
     # This function only needs cig_labels, not cig_freqs
     
-    cigs <- unlist(lapply(.self$crispr_runs, function(x) cigar(x$alns)), use.names = FALSE)
-    cig_labels <- unlist(lapply(.self$crispr_runs, function(x) x$cigar_labels), use.names = FALSE)
+    cigs <- unlist(lapply(.self$crispr_runs, function(x) cigar(x$alns)),
+                   use.names = FALSE)
+    cig_labels <- unlist(lapply(.self$crispr_runs, function(x) x$cigar_labels),
+                         use.names = FALSE)
     
-    names(cigs) <- cig_labels # calling by name with duplicates returns the first match
+    # calling by name with duplicates returns the first match
+    names(cigs) <- cig_labels
     
     splits <- split(seq_along(cig_labels), cig_labels)
     splits <- splits[match(rownames(cig_freqs), names(splits))]
@@ -1041,7 +1044,8 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # After: -5 -4 -3 -2 -1  1  2  3
     # Left =  original - target.loc - 1
     # Right = original - target.loc
-    
+
+
     if (is.null(gs) | is.null(ge)){
       gs <- min(sapply(.self$crispr_runs, function(x) min(start(x$alns))))
       ge <- max(sapply(.self$crispr_runs, function(x) max(end(x$alns))))

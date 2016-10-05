@@ -51,7 +51,6 @@ setMethod("plotAlignments", signature("CrisprSet"),
 #'inserted sequences below the plot.  The default options are intended for a
 #'figure 6-8 inches wide, with figure height best chosen according to the number
 #'of different variants and insertions to be displayed.
-#'
 #'@param alns A named character vector of aligned sequences, with insertions removed
 #'@param ins.sites A table of insertion_sites, which must include cols
 #'named "start", "cigar" and "seq", for the start of the insertion in the
@@ -90,6 +89,8 @@ setMethod("plotAlignments", signature("CrisprSet"),
 #'zero point (cleavage site) and the boxes for the guide and PAM.  (Default: 1)
 #'@param legend.symbol.size The size of the symbols indicating insertions
 #'in the legend.  (Default: ins.size)
+#'@param codon.frame Codon position of the leftmost nucleotide.  If provided,
+#'codon positions in the specified frame are indicated. (Default: NULL)
 #'@rdname plotAlignments
 setMethod("plotAlignments", signature("DNAString"),
   function(obj, ..., alns, ins.sites, highlight.pam = TRUE, show.plot = FALSE,
@@ -98,7 +99,8 @@ setMethod("plotAlignments", signature("DNAString"),
            xtick.breaks = NULL, plot.text.size = 2, axis.text.size = 8,
            legend.text.size = 6, highlight.guide=TRUE, guide.loc = NULL,
            tile.height = 0.55, max.insertion.size = 20, min.insertion.freq = 5,
-           line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE){
+           line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE,
+           codon.frame = NULL){
 
 
   # Insertion locations are determined by matching ins.sites$cigar with names(alns)
@@ -112,18 +114,24 @@ setMethod("plotAlignments", signature("DNAString"),
           xtick.labs = xtick.labs, xtick.breaks = xtick.breaks,
           tile.height = tile.height)
 
+  # Vertical lines for guide and codon.frame
+  if (! is.null(codon.frame)){
+    p <- addCodonFrame(p, nchar(ref), codon.frame)    
+  }
+  
+  p <- p + geom_vline(xintercept = target.loc + 0.5,
+                      colour = "black", size = line.weight)
+                                   
   # Colours and shapes for the insertion markers and tiles
   shps <- c(21,23,25)
   clrs <- c("#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00",
             "#CC79A7","#332288","#88CCEE","#44AA99","#117733","#999933",
             "#DDCC77","#661100","#CC6677","#882255", "#AA4499")
 
-  # Add line for the cut site
-  p <- p + geom_vline(xintercept = target.loc + 0.5,
-                      colour = "black", size = line.weight)
-
+  # Should a blank line be added to the bottom of the plot for "Other"?
   top_row <- ifelse(add.other, length(nms) + 1, length(nms))
 
+  # Add the guide box
   if (highlight.guide){
     ymin = top_row - (tile.height / 2 + 0.25)
     ymax = top_row + (tile.height / 2 + 0.25)
@@ -259,8 +267,27 @@ setMethod("plotAlignments", signature("DNAString"),
     print(p)
   }
   p
-  #return(p)
 })
+
+
+#'@title Internal CrispRVariants function for indicating codon frame on an
+#'alignment tile plot 
+#'@description Adds vertical dotted lines in intervals of three nucleotides.
+#'Codon frame is supplied, alignments are assumed not to span an intron-exon
+#'junction. 
+#'@param p A ggplot object, typically from CrispRVariants:::makeAlignmentTilePlot
+#'@param width The number of nucleotides in the alignments  
+#'@param codon.frame The leftmost starting location of the next codon - 1,2,or 3 
+#'@return A ggplot object with added vertical lines indicating the frame
+#'@author Helen Lindsay
+addCodonFrame <- function(p, width, codon.frame){
+    stopifnot(codon.frame %in% c(1,2,3))     
+    p <- p + theme(panel.grid = element_blank()) 
+    codon_locs <- seq(codon.frame, width, by = 3)  
+    p <- p + geom_vline(xintercept = codon_locs - 0.5, 
+               linetype = "dotted", color = "lightslategray", size = 0.5)
+    p
+}
 
 
 #'@title Transform data for plotting
@@ -318,6 +345,21 @@ setDNATileColours <- function(m){
 }
 
 
+#'@title Internal CrispRVariants function for creating the plotAlignments background
+#'@description Takes a matrix of characters, x and y locations and colours, creates
+#'a ggplot geom_tile plot with tiles labelled by the characters.
+#'@param m A matrix with column headings Var1: y location, Var2: x location, 
+#'cols: tile fill colour, isref: transparency value text_cols: text colour
+#'@param ref  The reference sequence, only used for checking the number of
+#'x-tick labels when x-tick breaks are not supplied 
+#'@param xlab Label for the x axis
+#'@param plot.text.size Size for text within plot
+#'@param axis.text.size Size for text on axes
+#'@param xtick.labs x axis labels
+#'@param xtick.breaks Locations of x labels
+#'@param tile.height Controls whitespace between tiles
+#'@return A ggplot object
+#'@author Helen Lindsay
 makeAlignmentTilePlot <- function(m, ref, xlab, plot.text.size, axis.text.size,
                                   xtick.labs, xtick.breaks, tile.height){
   alpha_v <- c(0.5,1)

@@ -1,6 +1,13 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.1.6}{
+  \itemize{
+  	\item \code{plotAlignments} can now mark codon boundaries if codon frame is specified.
+  	\item Added citation
+  }
+}
+
 \section{Changes in version 1.1.5}{
   \itemize{
   	\item More flexible specification of strand with new \code{readsToTarget} parameter 'orientation'

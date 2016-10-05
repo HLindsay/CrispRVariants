@@ -19,7 +19,7 @@ plotAlignments(obj, ...)
   plot.text.size = 2, axis.text.size = 8, legend.text.size = 6,
   highlight.guide = TRUE, guide.loc = NULL, tile.height = 0.55,
   max.insertion.size = 20, min.insertion.freq = 5, line.weight = 1,
-  legend.symbol.size = ins.size, add.other = FALSE)
+  legend.symbol.size = ins.size, add.other = FALSE, codon.frame = NULL)
 }
 \arguments{
 \item{obj}{The object to be plotted}
@@ -100,6 +100,9 @@ zero point (cleavage site) and the boxes for the guide and PAM.  (Default: 1)}
 
 \item{legend.symbol.size}{The size of the symbols indicating insertions
 in the legend.  (Default: ins.size)}
+
+\item{codon.frame}{Codon position of the leftmost nucleotide.  If provided,
+codon positions in the specified frame are indicated. (Default: NULL)}
 }
 \value{
 A ggplot2 figure

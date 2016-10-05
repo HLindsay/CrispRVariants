@@ -259,6 +259,7 @@ setMethod("readsToTarget", signature("character", "GRanges"),
             names <- as.character(names)
 
             orientation <- match.arg(orientation)
+                        
             cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
                                     collapse.pairs, names, use.consensus, target.loc,
                                     verbose = verbose, chimeras = chimeras, 
