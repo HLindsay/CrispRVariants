@@ -57,7 +57,9 @@ setMethod("plotVariants", signature("CrisprSet"),
   }
   
   dots <- list(...)
-  annotate_nms <- c("target.colour", "target.size", "gene.text.size", "panel.margin")
+  annotate_nms <- c("target.colour", "target.size", "gene.text.size", "panel.spacing",
+                    "panel.margin")
+
   annotate_args <- dots[names(dots) %in% annotate_nms]
   dots[annotate_nms] <- NULL
 
@@ -91,7 +93,7 @@ setMethod("plotVariants", signature("CrisprSet"),
 
   plotAlignments.args[["obj"]] <-  obj
   aln_p <- do.call(plotAlignments, plotAlignments.args)
-  aln_p <- aln_p + theme(legend.margin=grid::unit(0.2,"cm"))
+  aln_p <- aln_p + theme(legend.spacing = grid::unit(0.2,"cm"))
   
   plotFreqHeatmap.args[["obj"]] <- obj
   heat_p <- do.call(plotFreqHeatmap, plotFreqHeatmap.args)
@@ -155,7 +157,7 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
     stopifnot(isTRUE(genomicfeatures))
 
     columns <- c("GENEID","TXNAME", "EXONSTART", "EXONEND", "TXSTRAND",
-                 "CDSSTART", "CDSEND")
+                 "CDSCHROM", "CDSSTART", "CDSEND")
 
     trns <- GenomicFeatures::transcripts(txdb)
     exs <- findOverlaps(target, trns, ignore.strand = TRUE)

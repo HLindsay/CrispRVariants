@@ -257,7 +257,7 @@ setMethod("plotAlignments", signature("DNAString"),
                                                 size = legend.symbol.size)))
     p <- p + theme(legend.key = element_blank(),
                    legend.text = element_text(size = legend.text.size),
-                   legend.margin=grid::unit(0.2,"cm"))
+                   legend.spacing = grid::unit(0.2,"cm"))
 
   } else{
     p <- p + scale_fill_identity()
@@ -362,37 +362,37 @@ setDNATileColours <- function(m){
 #'@author Helen Lindsay
 makeAlignmentTilePlot <- function(m, ref, xlab, plot.text.size, axis.text.size,
                                   xtick.labs, xtick.breaks, tile.height){
-  alpha_v <- c(0.5,1)
-  # Change alpha values if only plotting the reference
-  if (length(unique(m$Var1)) == 1) alpha_v <- 1
-  # Plot aligned sequences
-  p <- ggplot(m) +
-    geom_tile(aes_q(x = quote(Var2), y = quote(Var1),
-                    fill = quote(cols), alpha = quote(isref),
-                    height = tile.height)) +
-    geom_text(aes_q(x = quote(Var2), y = quote(Var1),
-                    fill = quote(cols), label = quote(value),
-                    colour = quote(text_cols)), size = plot.text.size) +
-    scale_alpha_manual(values = alpha_v, guide = "none") +
-    ylab(NULL) + xlab(xlab) + scale_colour_identity() +
-    theme_bw() + theme(axis.text.y = element_text(size = axis.text.size),
-                       axis.text.x = element_text(size = axis.text.size),
-                       axis.title.x = element_text(vjust = -0.5),
-                       legend.position = "bottom")
+    alpha_v <- c(0.5,1)
+    # Change alpha values if only plotting the reference
+    if (length(unique(m$Var1)) == 1) alpha_v <- 1
+    # Plot aligned sequences
+    p <- ggplot(m) +
+      geom_tile(aes_q(x = quote(Var2), y = quote(Var1),
+                      fill = quote(cols), alpha = quote(isref),
+                      height = tile.height)) +
+      geom_text(aes_q(x = quote(Var2), y = quote(Var1),
+                      label = quote(value), colour = quote(text_cols)),
+                      size = plot.text.size) +
+      scale_alpha_manual(values = alpha_v, guide = "none") +
+      ylab(NULL) + xlab(xlab) + scale_colour_identity() +
+      theme_bw() + theme(axis.text.y = element_text(size = axis.text.size),
+                         axis.text.x = element_text(size = axis.text.size),
+                         axis.title.x = element_text(vjust = -0.5),
+                         legend.position = "bottom")
 
-  if (is.null(xtick.labs)){
-    # expand is the distance from the axis, multiplicative + additive
-    p <- p + scale_x_continuous(expand = c(0,0.25))
-  } else {
-    if (is.null(xtick.breaks)) {
-      stopifnot(length(xtick.labs == nchar(ref)))
-      p <- p + scale_x_continuous(expand = c(0,0.25), breaks = 1:nchar(ref),
-                                  labels = xtick.labs)
+    if (is.null(xtick.labs)){
+      # expand is the distance from the axis, multiplicative + additive
+      p <- p + scale_x_continuous(expand = c(0,0.25))
     } else {
-      p <- p + scale_x_continuous(expand = c(0,0.25), breaks = xtick.breaks,
-                                  labels = xtick.labs)
-    }
+      if (is.null(xtick.breaks)) {
+        stopifnot(length(xtick.labs == nchar(ref)))
+        p <- p + scale_x_continuous(expand = c(0,0.25), breaks = 1:nchar(ref),
+                                    labels = xtick.labs)
+      } else {
+        p <- p + scale_x_continuous(expand = c(0,0.25), breaks = xtick.breaks,
+                                    labels = xtick.labs)
+      }
 
-  }
-  return(p)
+    }
+    return(p)
 }

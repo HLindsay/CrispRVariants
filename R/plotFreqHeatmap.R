@@ -128,8 +128,9 @@ setMethod("plotFreqHeatmap", signature("matrix"),
   box_coords <- data.frame(xmin = integer(), xmax=integer(),
                            ymin=integer(), ymax=integer())
   box_row <- 1
-  xranges <- ggplot_build(g)$panel$ranges[[1]]$x.range
-  yranges <- ggplot_build(g)$panel$ranges[[1]]$y.range
+  panel_ranges <- ggplot_build(g)$layout$panel_ranges[[1]]
+  xranges <- panel_ranges$x.range
+  yranges <- panel_ranges$y.range
 
   if (isTRUE(add_header)){
     idxs <- which(is.na(counts$Count))
