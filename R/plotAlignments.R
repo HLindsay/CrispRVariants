@@ -146,7 +146,7 @@ setMethod("plotAlignments", signature("DNAString"),
 
     guide_df <- data.frame(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
     p <- p + geom_rect(data = guide_df,
-                       aes_q(xmin = quote(xmin), xmax = quote(xmax),
+                       aes_(xmin = quote(xmin), xmax = quote(xmax),
                              ymin = quote(ymin), ymax = quote(ymax),
                              color = "black"),
                        size = line.weight, fill = "transparent")
@@ -169,7 +169,7 @@ setMethod("plotAlignments", signature("DNAString"),
                          ymin = top_row - (tile.height / 2 + 0.2),
                          ymax = top_row + (tile.height / 2 + 0.2))
     p <- p + geom_rect(data=pam_df,
-                       aes_q(xmin = quote(xmin), xmax = quote(xmax),
+                       aes_(xmin = quote(xmin), xmax = quote(xmax),
                              ymin = quote(ymin), ymax = quote(ymax)),
                        color = "black", size = line.weight, fill = "transparent")
     #p <- p + annotation_custom(grob = textGrob("PAM", gp = gpar(cex = 3)),
@@ -246,7 +246,7 @@ setMethod("plotAlignments", signature("DNAString"),
 
     # Indicate insertions
     p <- p + geom_point(data = ins_points,
-                        aes_q(x = quote(x), y = quote(y),
+                        aes_(x = quote(x), y = quote(y),
                               shape = quote(shapes), fill = quote(colours)),
                         colour = "#000000", size = ins.size)  +
       scale_fill_identity() +
@@ -367,10 +367,10 @@ makeAlignmentTilePlot <- function(m, ref, xlab, plot.text.size, axis.text.size,
     if (length(unique(m$Var1)) == 1) alpha_v <- 1
     # Plot aligned sequences
     p <- ggplot(m) +
-      geom_tile(aes_q(x = quote(Var2), y = quote(Var1),
+      geom_tile(aes_(x = quote(Var2), y = quote(Var1),
                       fill = quote(cols), alpha = quote(isref),
                       height = tile.height)) +
-      geom_text(aes_q(x = quote(Var2), y = quote(Var1),
+      geom_text(aes_(x = quote(Var2), y = quote(Var1),
                       label = quote(value), colour = quote(text_cols)),
                       size = plot.text.size) +
       scale_alpha_manual(values = alpha_v, guide = "none") +

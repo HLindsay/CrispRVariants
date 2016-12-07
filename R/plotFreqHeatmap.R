@@ -112,12 +112,12 @@ setMethod("plotFreqHeatmap", signature("matrix"),
     colnames(m) <- c("Feature", "Sample","Percentage")
     m$Feature <- factor(m$Feature, levels = rev(levels(m$Feature)))
     
-    g <- ggplot(m) + geom_tile(aes_q(x = quote(Sample),
+    g <- ggplot(m) + geom_tile(aes_(x = quote(Sample),
                                      y = quote(Feature),
                                      fill = quote(Percentage)))
   }
   else{
-    g <- ggplot(counts) + geom_tile(aes_q(x = quote(Sample),
+    g <- ggplot(counts) + geom_tile(aes_(x = quote(Sample),
                                           y = quote(Feature),
                                           fill = quote(Count)))
   }
@@ -142,13 +142,13 @@ setMethod("plotFreqHeatmap", signature("matrix"),
 
   if (nrow(box_coords) > 0){
     g <- g + geom_rect(data = box_coords,
-                       aes_q(xmin = quote(xmin), xmax = quote(xmax),
+                       aes_(xmin = quote(xmin), xmax = quote(xmax),
                            ymin = quote(ymin), ymax = quote(ymax)),
                     color = "black", size = line.width, fill = "transparent")
   }
   # Plot the counts
   g <- g + geom_text(data = counts,
-                     aes_q(x = quote(Sample), y = quote(Feature),
+                     aes_(x = quote(Sample), y = quote(Feature),
                            label = quote(Count), fontface = quote(ff)),
                      size = plot.text.size)
 

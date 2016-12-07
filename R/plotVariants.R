@@ -293,18 +293,18 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
   tcks$shp <- as.integer(strands)
 
   p <- ggplot2::ggplot(tcks) +
-    geom_point(aes_q(x = quote(tloc), y = quote(ys), group = quote(ys),
+    geom_point(aes_(x = quote(tloc), y = quote(ys), group = quote(ys),
                      shape = quote(shp)), size = 2) +
-    geom_line(data = lns, aes_q(x = quote(tloc), y = quote(ys),
+    geom_line(data = lns, aes_(x = quote(tloc), y = quote(ys),
                                 group = quote(ys))) +
     scale_shape_identity()
 
   p <- p + geom_rect(data = all_exs, fill = "black", color = "black",
-                     aes_q(xmin = quote(start), xmax = quote(end),
+                     aes_(xmin = quote(start), xmax = quote(end),
                            ymin = quote(ymin), ymax = quote(ymax)))
 
   p <- p + geom_rect(data = target_df,
-                     aes_q(xmin = quote(xmin), xmax = quote(xmax),
+                     aes_(xmin = quote(xmin), xmax = quote(xmax),
                            ymin = quote(ymin), ymax = quote(ymax)),
                      colour = target.colour, fill = NA, size = target.size)
 

@@ -169,7 +169,7 @@ setMethod("barplotAlleleFreqs", signature("matrix"),
   af$Sample <- factor(af$Sample, levels = rev(unique(af$Sample)))
 
   # barplot
-  p <- ggplot(af, aes_q(x = quote(Sample), y = quote(Percent),
+  p <- ggplot(af, aes_(x = quote(Sample), y = quote(Percent),
                         fill = quote(Variant))) +
     geom_bar(stat = "Identity", size = 10) +
     scale_y_continuous(expand = c(0,0)) + scale_x_discrete(expand = c(0,0)) +
@@ -200,7 +200,7 @@ setMethod("barplotAlleleFreqs", signature("matrix"),
 
   dat$Sample <- factor(dat$Sample, levels = rev(unique(af$Sample)))
 
-  q <- ggplot(dat, aes_q(x = quote(Col), y = quote(Sample),
+  q <- ggplot(dat, aes_(x = quote(Col), y = quote(Sample),
                          label = quote(Vals))) +
     geom_tile(fill = "white", colour = "black", size = 1) + geom_text(size = 3) +
     scale_y_discrete(expand = c(0,0)) + scale_x_discrete(expand = c(0,0)) +
