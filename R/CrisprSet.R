@@ -170,7 +170,7 @@ CrisprSet$methods(
              for renumbering")
       }
       g_to_t <- .self$.genomeToTargetLocs(target.loc, target_start, target_end, 
-                             as.character(strand(.self$target)) == "+")
+                             as.character(strand(.self$target)) %in% c("+", "*"))
       }
       
     cut.site <- ifelse(is.na(target.loc), 17, target.loc)
@@ -1044,6 +1044,8 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # After: -5 -4 -3 -2 -1  1  2  3
     # Left =  original - target.loc - 1
     # Right = original - target.loc
+
+    stopifnot(plus_strand %in% c(TRUE, FALSE))
 
 
     if (is.null(gs) | is.null(ge)){
