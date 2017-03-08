@@ -977,10 +977,10 @@ if return_nms = TRUE
     starts <- c()
     
     for (i in seq_along(splits)){
+      idxs <- splits[[i]]
       if (i %in% all_d){
         seqs[i] <- ""
       } else {
-        idxs <- splits[[i]]
         cig <- names(splits[[i]])
         seqs[i] <- consensusString(mcols(all_alns[idxs])$seq)
       }
