@@ -39,14 +39,29 @@ test_that("readsToTargets correctly separates reads by PCR primer",{
 })
 
 
+bam <- system.file("extdata", "bam/ab1_ptena_wildtype_looking_embryo_1_s.bam",
+                      package="CrispRVariants")
+reference <- Biostrings::DNAString("GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT")
+gdl <- GenomicRanges::GRanges("chr17", IRanges(23648469, 23648501),
+           strand = "-")
+
+test_that("Excluding reads by name works correctly", {
+    # This bam file contains four non-chimeric and one chimeric read.
+    # Here the non-chimeric reads are excluded by name
+    
+    # To do: exclude.names gives a warning as is.null used with vector
+    cset <- suppressWarnings(readsToTarget(bam, gdl, reference = reference,
+                exclude.names = c("AB2017","AB2018","AB2021","AB2024")))
+
+    expect_equal(length(cset$crispr_runs[[1]]$alns), 0)
+    expect_equal(length(cset$crispr_runs[[1]]$chimeras), 2)
+})
+
+
 test_that("Arguments for calling SNVs are passed on",{
     # There is a nucleotide change 19 bases upstream of the cut site
     # in one of these sequences
-    bam <- system.file("extdata", "bam/ab1_ptena_wildtype_looking_embryo_1_s.bam",
-                      package="CrispRVariants")
-    reference <- Biostrings::DNAString("GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT")
-    gdl <- GenomicRanges::GRanges("chr17", IRanges(23648469, 23648501),
-           strand = "-")
+    
     # With default settings, the snv should not be called
     cset <- readsToTarget(bam, target = gdl, reference = reference,
              target.loc = 22)

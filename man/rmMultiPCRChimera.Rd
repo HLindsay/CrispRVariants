@@ -33,4 +33,3 @@ assigned to a single guide.
 \author{
 Helen Lindsay
 }
-

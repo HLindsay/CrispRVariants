@@ -23,6 +23,8 @@ setGeneric("plotAlignments", function(obj, ...) {
 #' (default: TRUE)
 #'@param add.other Add a blank row labelled "Other" to the plot, for combining
 #'with plotFreqHeatmap (default: TRUE (signature "CrisprSet") FALSE (signature "matrix"))
+#'@param create.plot Should the data be plotted?  If false, returns the data used
+#'for plotting (Default: TRUE) 
 #'@examples
 #'#Load a CrisprSet object and plot
 #'data("gol_clutch1")
@@ -30,13 +32,14 @@ setGeneric("plotAlignments", function(obj, ...) {
 setMethod("plotAlignments", signature("CrisprSet"),
           function(obj, ..., min.freq = 0, min.count = 1,
                    top.n = 50, renumbered = obj$pars[["renumbered"]],
-                   add.other = TRUE) {
+                   add.other = TRUE, create.plot = TRUE) {
 
             plot_obj <- obj$plotVariants(min.freq = min.freq,
                                          min.count = min.count,
                                          top.n = top.n,
                                          renumbered = renumbered,
-                                         add.other = add.other, ...)
+                                         add.other = add.other,
+                                         create.plot = create.plot, ...)
 
             return(plot_obj)
           })

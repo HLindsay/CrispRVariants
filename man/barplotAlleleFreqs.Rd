@@ -98,4 +98,3 @@ barplotAlleleFreqs(variantCounts(gol), include.table = FALSE)
 \author{
 Helen Lindsay
 }
-

@@ -42,4 +42,3 @@ narrowAlignments(bam, target, reverse.complement = FALSE)
 \author{
 Helen Lindsay
 }
-

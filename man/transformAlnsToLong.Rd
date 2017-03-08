@@ -24,4 +24,3 @@ into long format, i.e. one observation (tile position) per row.  Used internally
 \author{
 Helen Lindsay
 }
-

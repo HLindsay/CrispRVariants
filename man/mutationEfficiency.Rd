@@ -51,4 +51,3 @@ mutationEfficiency(gol)
 \author{
 Helen Lindsay
 }
-

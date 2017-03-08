@@ -36,4 +36,3 @@ a ggplot geom_tile plot with tiles labelled by the characters.
 \author{
 Helen Lindsay
 }
-

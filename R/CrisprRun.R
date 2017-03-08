@@ -61,8 +61,12 @@ CrisprRun = setRefClass(
 CrisprRun$methods(
   initialize = function(bam, target, genome.ranges, rc = FALSE, name = NULL,
                         chimeras = GenomicAlignments::GAlignments(), verbose = TRUE){
+    
+    # If no name is provided, use the coordinates
+    if (is.null(name)){
+        name <<- sprintf("%s:%s-%s", seqnames(target), start(target), end(target))
+    } else { name <<- name}
 
-    name <<- ifelse(is.null(name), NA, name)
     if (isTRUE(verbose)) message(sprintf("\nInitialising CrisprRun %s\n", .self$name))
 
     alns <<- bam

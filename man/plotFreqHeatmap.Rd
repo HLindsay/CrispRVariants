@@ -3,8 +3,8 @@
 \docType{methods}
 \name{plotFreqHeatmap}
 \alias{plotFreqHeatmap}
-\alias{plotFreqHeatmap,CrisprSet-method}
 \alias{plotFreqHeatmap,matrix-method}
+\alias{plotFreqHeatmap,CrisprSet-method}
 \title{Plot a table of counts with colours indicating frequency}
 \usage{
 plotFreqHeatmap(obj, ...)
@@ -95,4 +95,3 @@ data("gol_clutch1")
 # Plot the frequency heatmap
 plotFreqHeatmap(gol)
 }
-

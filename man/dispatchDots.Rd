@@ -39,4 +39,3 @@ g(a = 5, d = 6)
 \author{
 Helen Lindsay
 }
-

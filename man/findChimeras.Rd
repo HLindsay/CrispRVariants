@@ -33,10 +33,9 @@ bam <- GenomicAlignments::readGAlignments(bam_fname, use.names = TRUE)
 chimera_indices <- findChimeras(bam)
 chimeras <- bam[chimera_indices]
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link{plotChimeras}} for plotting chimeric alignment sets.
 }
-
+\author{
+Helen Lindsay
+}

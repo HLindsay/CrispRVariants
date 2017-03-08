@@ -2,8 +2,8 @@
 % Please edit documentation in R/CrisprRun.R
 \docType{class}
 \name{CrisprRun-class}
-\alias{CrisprRun}
 \alias{CrisprRun-class}
+\alias{CrisprRun}
 \title{CrisprRun class}
 \arguments{
 \item{bam}{a GAlignments object containing (narrowed) alignments to the target region.
@@ -47,6 +47,7 @@ initialisation of a CrisprRun object.}
 
 \item{\code{chimeras}}{Chimeric, off-target alignments corresponding to alignments in alns}
 }}
+
 \section{Methods}{
 
 \describe{
@@ -87,6 +88,7 @@ genome_ranges:  The cigar operations of the reads with respect to the genome,
 Input parameters:
   idxs:     Indexes of reads to remove}
 }}
+
 \examples{
 # readsToTarget with signature("GAlignments", "GRanges") returns a 
 # CrisprRun object
@@ -106,10 +108,9 @@ crispr_run <- readsToTarget(alns, target = gd, reference = reference,
 # Alternatively, CrisprRun objects can be accessed from a CrisprSet object
 # e.g. crispr_set$crispr_runs[[1]]
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link[CrispRVariants]{CrisprSet}}
 }
-
+\author{
+Helen Lindsay
+}

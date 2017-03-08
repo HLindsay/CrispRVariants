@@ -57,8 +57,7 @@ setMethod("plotVariants", signature("CrisprSet"),
   }
   
   dots <- list(...)
-  annotate_nms <- c("target.colour", "target.size", "gene.text.size", "panel.spacing",
-                    "panel.margin")
+  annotate_nms <- c("target.colour", "target.size", "gene.text.size", "panel.spacing")
 
   annotate_args <- dots[names(dots) %in% annotate_nms]
   dots[annotate_nms] <- NULL
@@ -235,7 +234,7 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
 #'@param target.colour Colour of box indicating targt region
 #'@param target.size Thickness of box indicating target region
 #'@param gene.text.size Size for figure label
-#'@param panel.margin Unit object, margin size
+#'@param panel.spacing Unit object, margin size
 #'@param plot.title A title for the plot.  If no plot.title is supplied,
 #'the title is the list of gene ids shown (default).
 #'If plot.title == FALSE, the plot will not have a title.
@@ -245,7 +244,7 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
 #'@return A ggplot2 plot of the transcript structures
 annotateGenePlot <- function(txdb, target, target.colour = "red",
                         target.size = 1, gene.text.size = 10,
-                        panel.margin = grid::unit(c(0.1,0.1,0.1,0.1), "lines"),
+                        panel.spacing = grid::unit(c(0.1,0.1,0.1,0.1), "lines"),
                         plot.title = NULL, all.transcripts = TRUE){
 
   genomicfeatures <- requireNamespace("GenomicFeatures")
@@ -316,7 +315,7 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
           axis.text.y = element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          panel.margin = panel.margin,
+          panel.spacing = panel.spacing,
           text = element_text(size = gene.text.size),
           axis.ticks.y = element_blank()) +
        ylab(NULL) + xlab(NULL)

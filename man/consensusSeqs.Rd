@@ -39,4 +39,3 @@ seqs <- consensusSeqs(gol, sample = 2)
 \author{
 Helen Lindsay
 }
-

@@ -62,4 +62,3 @@ p <- plotVariants(gol, txdb = txdb,
 and \code{\link{annotateGenePlot}} for options relating
 to the transcript plot.
 }
-

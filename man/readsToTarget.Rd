@@ -7,8 +7,8 @@
 \alias{readsToTarget,GAlignmentsList,GRanges-method}
 \alias{readsToTarget,character,GRanges-method}
 \alias{readsToTargets}
-\alias{readsToTargets,GAlignmentsList,GRanges-method}
 \alias{readsToTargets,character,GRanges-method}
+\alias{readsToTargets,GAlignmentsList,GRanges-method}
 \title{Trims reads to a target region.}
 \usage{
 readsToTarget(reads, target, ...)
@@ -139,4 +139,3 @@ crispr_set <- readsToTarget(bam_fnames, target = gd, reference = reference,
 \author{
 Helen Lindsay
 }
-

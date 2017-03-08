@@ -2,8 +2,8 @@
 % Please edit documentation in R/crispRvariants_data.R
 \docType{data}
 \name{gol_clutch1}
-\alias{gol}
 \alias{gol_clutch1}
+\alias{gol}
 \title{Variant sequences from golden clutch 1 (Burger et al)}
 \format{A CrisprSet object countaining 8 samples}
 \usage{
@@ -21,4 +21,3 @@ This dataset is a subset of the crispant data for the golden gene used by Burger
 }
 }
 \keyword{datasets}
-

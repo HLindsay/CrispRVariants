@@ -43,4 +43,3 @@ abifToFastq("IM2033", ab1_fname, "IM2033.fastq")
 \author{
 Helen Lindsay
 }
-

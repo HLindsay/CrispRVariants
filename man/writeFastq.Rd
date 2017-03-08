@@ -30,4 +30,3 @@ function is faster with checking switched off.
 \author{
 Helen Lindsay
 }
-

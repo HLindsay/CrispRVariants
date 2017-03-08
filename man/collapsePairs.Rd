@@ -35,4 +35,3 @@ collapsed to a single read, taking the consensus sequence of the pairs.
 \author{
 Helen Lindsay
 }
-

@@ -52,4 +52,3 @@ variantCounts(gol, top.n = 5)
 \author{
 Helen Lindsay
 }
-

@@ -62,10 +62,9 @@ chimeras <- bam[names(bam) == "AB3092"]
 # a long gap.
 plotChimeras(chimeras)
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link{findChimeras}} for finding chimeric alignment sets.
 }
-
+\author{
+Helen Lindsay
+}

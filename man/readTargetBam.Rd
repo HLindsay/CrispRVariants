@@ -43,4 +43,3 @@ chimeric read will be removed, or merged, which means that chimeras will be
 collapsed into a single read where possible. (Not implemented yet)
 If chimeras = "merge", chimeric reads are merged if all segments
 }
-

@@ -10,7 +10,8 @@
 plotAlignments(obj, ...)
 
 \S4method{plotAlignments}{CrisprSet}(obj, ..., min.freq = 0, min.count = 1,
-  top.n = 50, renumbered = obj$pars[["renumbered"]], add.other = TRUE)
+  top.n = 50, renumbered = obj$pars[["renumbered"]], add.other = TRUE,
+  create.plot = TRUE)
 
 \S4method{plotAlignments}{DNAString}(obj, ..., alns, ins.sites,
   highlight.pam = TRUE, show.plot = FALSE, target.loc = 17,
@@ -40,6 +41,9 @@ one sample (default: 0, i.e no count cutoff)}
 
 \item{add.other}{Add a blank row labelled "Other" to the plot, for combining
 with plotFreqHeatmap (default: TRUE (signature "CrisprSet") FALSE (signature "matrix"))}
+
+\item{create.plot}{Should the data be plotted?  If false, returns the data used
+for plotting (Default: TRUE)}
 
 \item{alns}{A named character vector of aligned sequences, with insertions removed}
 
@@ -126,10 +130,9 @@ of different variants and insertions to be displayed.
 data("gol_clutch1")
 plotAlignments(gol)
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link{seqsToAln}}, \code{\link[ggplot2]{ggplot}}
 }
-
+\author{
+Helen Lindsay
+}

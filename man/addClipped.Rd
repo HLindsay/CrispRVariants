@@ -27,4 +27,3 @@ is not always a good assumption, particularly in the case of chimeric reads!
 \author{
 Helen Lindsay
 }
-

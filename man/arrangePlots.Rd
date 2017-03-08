@@ -34,4 +34,3 @@ The arranged plots
 Arranges 3 plots in two rows.  The vertical margins of the
 left.plot and right.plot constrained to be equal
 }
-

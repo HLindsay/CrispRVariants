@@ -36,4 +36,3 @@ are provided, aligned sequences are cropped to the target region
 \author{
 Helen Lindsay
 }
-

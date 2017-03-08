@@ -22,4 +22,3 @@ Returns a GAlignments excluding reads based on either name and/or location
 \author{
 Helen Lindsay
 }
-

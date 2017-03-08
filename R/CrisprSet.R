@@ -127,9 +127,10 @@ CrisprSet$methods(
 
     if (unique(sapply(.self$crispr_runs, function(x) length(x$alns)) == 0)){
       pars["all_chimeric"] <<- TRUE
+      is_plus <- as.character(strand(target) %in% c("+", "*"))
       dummy <- .self$.genomeToTargetLocs(target.loc, start(target),
-                                end(target), rc = rc, gs = start(target),
-                                ge = end(target))
+                                end(target), plus_strand = is_plus,
+                                gs = start(target), ge = end(target))
       return()
     }
 
@@ -516,6 +517,7 @@ Return value:
       freqs <- .self$.getFilteredCigarTable(include.chimeras = include.chimeras)
     }
 
+    # Exclude unwanted columns, e.g. controls
     exclude.idxs <- match(exclude.cols, colnames(freqs))
     if (any(is.na(exclude.idxs))){
       nf <- exclude.cols[is.na(exclude.idxs)]
@@ -546,6 +548,7 @@ Return value:
     if (length(not_mutated) > 0) freqs <- freqs[-not_mutated,,drop = FALSE]
 
     if (! is.null(group)){
+      if (! class(group) == "factor") group <- as.factor(group)
       result <- lapply(levels(group), function(g){
         eff <- .self$.calculateEfficiency(freqs[,group == g, drop = FALSE],
                                           total_seqs, count.alleles,
@@ -824,7 +827,7 @@ See also:
   plotVariants = function(min.freq = 0, min.count = 0,
                    top.n = nrow(.self$cigar_freqs),
                    renumbered = .self$pars["renumbered"],
-                   add.other = add.other, ...){
+                   add.other = add.other, create.plot = TRUE, ...){
 '
 Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
@@ -845,6 +848,8 @@ Input parameters:
                     (default: TRUE)
   add.other         Add a blank row named "Other" for chimeric alignments,
                     if there are any (Default: TRUE)
+  create.plot       Data is plotted if TRUE and returned without if FALSE.
+                    (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:
@@ -907,6 +912,8 @@ Return value:
     }
 
     args <- modifyList(args, dots)
+    if (! isTRUE(create.plot)) return(args)
+
     p <- do.call(plotAlignments, args)
     return(p)
   },
@@ -1019,7 +1026,7 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # The short cigars (not renumbered) do not have enough information,
     # use the full cigars for sorting
     # Do this just for the alns to be displayed?
-    temp <- consensusAlleles(cig_freqs, return_nms = TRUE)
+    temp <- .self$consensusAlleles(cig_freqs, return_nms = TRUE)
     
     alns <- seqsToAln(temp$split_nms, temp$seqs, target = .self$target,
                  aln_start = temp$starts, 
@@ -1036,7 +1043,7 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # target is on the negative strand
     # target.loc is the left side of the cut site (Will be numbered -1)
     # target_start and target_end are genomic coordinates, with target_start < target_end
-    # rc: is the target on the negative strand wrt the reference?
+    # plus_strand: is the target on the positive strand wrt the reference?
     # returns a vector of genomic locations and target locations
 
     # Example:  target.loc = 5

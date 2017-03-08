@@ -5,7 +5,7 @@
 \title{Plots and annotates transcripts}
 \usage{
 annotateGenePlot(txdb, target, target.colour = "red", target.size = 1,
-  gene.text.size = 10, panel.margin = grid::unit(c(0.1, 0.1, 0.1, 0.1),
+  gene.text.size = 10, panel.spacing = grid::unit(c(0.1, 0.1, 0.1, 0.1),
   "lines"), plot.title = NULL, all.transcripts = TRUE)
 }
 \arguments{
@@ -19,7 +19,7 @@ annotateGenePlot(txdb, target, target.colour = "red", target.size = 1,
 
 \item{gene.text.size}{Size for figure label}
 
-\item{panel.margin}{Unit object, margin size}
+\item{panel.spacing}{Unit object, margin size}
 
 \item{plot.title}{A title for the plot.  If no plot.title is supplied,
 the title is the list of gene ids shown (default).
@@ -36,4 +36,3 @@ A ggplot2 plot of the transcript structures
 Plots the gene structure, annotates this with the
 target location
 }
-

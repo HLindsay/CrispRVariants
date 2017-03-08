@@ -31,4 +31,3 @@ in a table of variants.
 \author{
 Helen Lindsay
 }
-

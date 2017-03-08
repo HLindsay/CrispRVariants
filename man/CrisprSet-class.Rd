@@ -2,8 +2,8 @@
 % Please edit documentation in R/CrisprSet.R
 \docType{class}
 \name{CrisprSet-class}
-\alias{CrisprSet}
 \alias{CrisprSet-class}
+\alias{CrisprSet}
 \title{CrisprSet class}
 \arguments{
 \item{crispr.runs}{A list of CrisprRun objects, typically representing individual samples
@@ -72,6 +72,7 @@ of an experiment.}
 
 \item{\code{target}}{The target location, as a GRanges object}
 }}
+
 \section{Methods}{
 
 \describe{
@@ -239,7 +240,8 @@ Return value:
   matrix if a group is supplied.}
 
 \item{\code{plotVariants(min.freq = 0, min.count = 0, top.n = nrow(.self$cigar_freqs),
-  renumbered = .self$pars["renumbered"], add.other = add.other, ...)}}{Description:
+  renumbered = .self$pars["renumbered"], add.other = add.other,
+  create.plot = TRUE, ...)}}{Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
   of variants, then plots variants with respect to the reference sequence,
   collapsing insertions and displaying insertion sequences below the plot.
@@ -258,11 +260,14 @@ Input parameters:
                     (default: TRUE)
   add.other         Add a blank row named "Other" for chimeric alignments,
                     if there are any (Default: TRUE)
+  create.plot       Data is plotted if TRUE and returned without if FALSE.
+                    (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:
   A ggplot2 plot object.  Call "print(obj)" to display}
 }}
+
 \examples{
 # Load the metadata table
 md_fname <- system.file("extdata", "gol_F1_metadata_small.txt", package = "CrispRVariants")
@@ -278,11 +283,10 @@ gd <- GenomicRanges::GRanges("18", IRanges::IRanges(4647377, 4647399), strand = 
 crispr_set <- readsToTarget(bam_fnames, target = gd, reference = reference,
                            names = md$experiment.name, target.loc = 17)
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link{readsToTarget}} and \code{\link{readsToTargets}}
 for initialising a CrisprSet, \code{\link[CrispRVariants]{CrisprRun}}
 }
-
+\author{
+Helen Lindsay
+}

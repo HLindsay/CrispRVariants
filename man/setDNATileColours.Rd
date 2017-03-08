@@ -19,4 +19,3 @@ DNA alphabet.  Colour names must be valid.
 \author{
 Helen Lindsay
 }
-

@@ -1,6 +1,30 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+
+\section{Changes in version 1.3.4}{
+  \itemize{
+      \item New function \code{refFromAlns} infers the reference sequence from aligned reads
+      \item Fixed bug causing an empty plot when plotting a single alignment
+      with a large deletion
+      \item Changed \code{annotateGenePlot} from panel.margin to panel.spacing in accordance
+      with recent ggplot2 versions
+      \item Added "create.plot" argument to \code{plotAlignments} for signature 
+      \code{CrisprSet} to make plot customisation easier.
+      \item Fixed bug in argument names when all alignments are chimeric
+      \item CrisprRun name now defaults to the coordinates when no name is provided
+  }
+}
+
+
+\section{Changes in version 1.3.3}{
+  \itemize{
+      \item Fixed bug causing incorrect x-axis position in plotAlignments when
+      strand unspecified
+  }
+}
+
+
 \section{Changes in version 1.1.6}{
   \itemize{
   	\item \code{plotAlignments} can now mark codon boundaries if codon frame is specified.

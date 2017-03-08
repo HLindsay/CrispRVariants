@@ -4,10 +4,10 @@
 \name{countDeletions}
 \alias{countDeletions}
 \alias{countDeletions,GAlignments-method}
-\alias{countIndels}
-\alias{countIndels,GAlignments-method}
 \alias{countInsertions}
 \alias{countInsertions,GAlignments-method}
+\alias{countIndels}
+\alias{countIndels,GAlignments-method}
 \alias{indelPercent}
 \alias{indelPercent,GAlignments-method}
 \title{Count the number of reads containing an insertion or deletion}
@@ -81,4 +81,3 @@ indelPercent(bam)
 \author{
 Helen Lindsay
 }
-

@@ -53,10 +53,9 @@ exact matches to a set of PCR primers.  Note that this is not always a good
 assumption, and is misleading in the case of chimeric reads where sections
 clipped in one part of a chimera are aligned in another.
 }
-\author{
-Helen Lindsay
-}
 \seealso{
 \code{\link[GenomicRanges]{GRanges}}, \code{\link[GenomicAlignments]{GAlignments}}
 }
-
+\author{
+Helen Lindsay
+}

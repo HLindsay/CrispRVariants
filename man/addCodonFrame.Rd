@@ -25,4 +25,3 @@ junction.
 \author{
 Helen Lindsay
 }
-
