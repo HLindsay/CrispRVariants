@@ -14,39 +14,33 @@
 #'@param aln_start Genomic start locations of aligned sequences. Should be
 #'used in conjunction with target_start and target_end.
 #'@param reverse_complement (Default: FALSE)
+#'@param allow.partial Are alignments that do not span the target region allowed?
+#'(Default: FALSE)
 #'@return The sequences with insertions collapsed and deletions padded
 #'@rdname seqsToAln
 seqsToAln <- function(cigar, dnaseq, target, del_char = "-", 
-                      aln_start = NULL, reverse_complement = FALSE){
-  # Additional trimming is necessary because deletion operations may overhang
-  # boundaries of target region
+                      aln_start = NULL, reverse_complement = FALSE,
+                      allow_partial = FALSE){
+    # Additional trimming is necessary because deletion operations may overhang
+    # boundaries of target region
+    
+    if (as.character(GenomicRanges::strand(target)) == "*") strand <- "+"
   
-  target_start <- start(target)
-  target_end <- end(target)
-  strand <- as.character(strand(target))
-  if (strand == "*") strand <- "+"
-  
-  result <- GenomicAlignments::sequenceLayer(dnaseq, cigar, D.letter = del_char,
-                                          N.letter = "N")
-  sq_len <- GenomicAlignments::width(result)
-
-  if (! is.null(aln_start) & ! is.null(target_start) & ! is.null(target_end) ){
-    trim_start <- target_start - (aln_start - 1)
-
-    if (any(trim_start < 0)){
-      stop("dnaseq to be trimmed must start before the target location")
+    result <- GenomicAlignments::sequenceLayer(dnaseq, cigar, D.letter = del_char,
+                                               N.letter = "N")
+    if (! is.null(aln_start)){
+      shifts <- aln_start - GenomicAlignments::start(target)
+      result <- Biostrings::stackStrings(result, shift = shifts, from = 1,
+                 to = width(target), Lpadding.letter = "+", Rpadding.letter = "+")
+      if (! isTRUE(allow_partial) & isTRUE(any(grep("\\+", result)))){
+        stop(paste("When allow_partial is FALSE, dnaseq to be",
+                   "trimmed must span the target location"))
+      }
     }
 
-    trim_end <- trim_start + (target_end - target_start)
-    if (any(trim_end > sq_len)){
-      stop("dnaseq is not long enough to trim to the target region")
+    if (isTRUE(reverse_complement)){
+      result <- Biostrings::reverseComplement(result)
     }
-    result <- subseq(result, trim_start,trim_end)
-  }
-  
-  if (isTRUE(reverse_complement)){
-    result <- reverseComplement(result)
-  }
-  result <- as.character(result)
-  result
+    result <- as.character(result)
+    result
 }
