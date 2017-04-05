@@ -1,6 +1,15 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.3.5}{
+  \itemize{
+    \item New option "minoverlap" in \code{readsToTarget} allows reads that
+    do not span the target region to be considered
+    \item \code{plotAlignments} now works with character as well as DNAString
+    objects
+    \item Merging of long gaps mapped as chimeras now possible    
+  }
+}
 
 \section{Changes in version 1.3.4}{
   \itemize{

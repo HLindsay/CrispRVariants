@@ -22,7 +22,7 @@ used in conjunction with target_start and target_end.}
 
 \item{reverse_complement}{(Default: FALSE)}
 
-\item{allow.partial}{Are alignments that do not span the target region allowed?
+\item{allow_partial}{Are alignments that do not span the target region allowed?
 (Default: FALSE)}
 }
 \value{

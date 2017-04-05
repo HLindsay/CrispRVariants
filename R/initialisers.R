@@ -710,8 +710,10 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
     return(list(bam = temp$bam, chimeras = temp$chimeras[[1]]))
   }
   if (chimeras == "merge"){
-    warning("Merging chimeras not implemented yet, ignoring chimeras")
-    return(list(bam = bam, chimeras = GenomicAlignments::GAlignments()))
+    result <- mergeChimeras(bam, chimera_idxs, verbose = verbose)
+    return(list(bam = c(bam[-chimera_idxs], result$merged), chimeras = result$unmerged))
+    # warning("Merging chimeras not implemented yet, ignoring chimeras")
+    #return(list(bam = bam, chimeras = GenomicAlignments::GAlignments()))
   }
 }
 
