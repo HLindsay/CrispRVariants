@@ -4,6 +4,7 @@
 \name{plotAlignments}
 \alias{plotAlignments}
 \alias{plotAlignments,CrisprSet-method}
+\alias{plotAlignments,character-method}
 \alias{plotAlignments,DNAString-method}
 \title{Plot alignments with respect to a reference sequence}
 \usage{
@@ -12,6 +13,15 @@ plotAlignments(obj, ...)
 \S4method{plotAlignments}{CrisprSet}(obj, ..., min.freq = 0, min.count = 1,
   top.n = 50, renumbered = obj$pars[["renumbered"]], add.other = TRUE,
   create.plot = TRUE)
+
+\S4method{plotAlignments}{character}(obj, ..., alns, ins.sites,
+  highlight.pam = TRUE, show.plot = FALSE, target.loc = 17,
+  pam.start = NA, pam.end = NA, ins.size = 2, legend.cols = 3,
+  xlab = NULL, xtick.labs = NULL, xtick.breaks = NULL,
+  plot.text.size = 2, axis.text.size = 8, legend.text.size = 6,
+  highlight.guide = TRUE, guide.loc = NULL, tile.height = 0.55,
+  max.insertion.size = 20, min.insertion.freq = 5, line.weight = 1,
+  legend.symbol.size = ins.size, add.other = FALSE, codon.frame = NULL)
 
 \S4method{plotAlignments}{DNAString}(obj, ..., alns, ins.sites,
   highlight.pam = TRUE, show.plot = FALSE, target.loc = 17,

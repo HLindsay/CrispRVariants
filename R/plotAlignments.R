@@ -95,7 +95,7 @@ setMethod("plotAlignments", signature("CrisprSet"),
 #'@param codon.frame Codon position of the leftmost nucleotide.  If provided,
 #'codon positions in the specified frame are indicated. (Default: NULL)
 #'@rdname plotAlignments
-setMethod("plotAlignments", signature("DNAString"),
+setMethod("plotAlignments", signature("character"),
   function(obj, ..., alns, ins.sites, highlight.pam = TRUE, show.plot = FALSE,
            target.loc = 17, pam.start = NA, pam.end = NA,
            ins.size = 2, legend.cols = 3, xlab = NULL, xtick.labs = NULL,
@@ -272,6 +272,36 @@ setMethod("plotAlignments", signature("DNAString"),
   p
 })
 
+#'@rdname plotAlignments
+setMethod("plotAlignments", signature("DNAString"),
+    function(obj, ..., alns, ins.sites, highlight.pam = TRUE, show.plot = FALSE,
+           target.loc = 17, pam.start = NA, pam.end = NA,
+           ins.size = 2, legend.cols = 3, xlab = NULL, xtick.labs = NULL,
+           xtick.breaks = NULL, plot.text.size = 2, axis.text.size = 8,
+           legend.text.size = 6, highlight.guide=TRUE, guide.loc = NULL,
+           tile.height = 0.55, max.insertion.size = 20, min.insertion.freq = 5,
+           line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE,
+           codon.frame = NULL){
+
+    #in_args <- as.list(match.call())
+    #in_args$obj <- as.character(obj)
+    #print(in_args)
+    #do.call(plotAlignments, in_args)
+
+    plotAlignments(as.character(obj), alns = alns, ins.sites = ins.sites,
+           highlight.pam = highlight.pam, show.plot = show.plot,
+           target.loc = target.loc, pam.start = pam.start, pam.end = pam.end,
+           ins.size = ins.size, legend.cols = legend.cols, xlab = xlab,
+           xtick.labs = xtick.labs, xtick.breaks = xtick.breaks,
+           plot.text.size = plot.text.size, axis.text.size = axis.text.size,
+           legend.text.size = legend.text.size,
+           highlight.guide = highlight.guide, guide.loc = guide.loc,
+           tile.height = tile.height, max.insertion.size = max.insertion.size,
+           min.insertion.freq = min.insertion.freq, line.weight = line.weight,
+           legend.symbol.size = ins.size, add.other = add.other,
+           codon.frame = codon.frame, ...)
+
+})
 
 #'@title Internal CrispRVariants function for indicating codon frame on an
 #'alignment tile plot 
@@ -332,16 +362,20 @@ transformAlnsToLong <- function(ref, alns, add.other = FALSE){
 #'@return A matrix with additional columns specifying tile and text colours
 #'@author Helen Lindsay
 setDNATileColours <- function(m){
-  ambig_codes <- c('K','M','R','Y','S','W','B','V','H','D')
-  ambig <- which(! m$value %in% c("A", "C", "T", "G", "N", "-"))
-
   m$value <- as.character(m$value)
-  m$value <- factor(m$value, levels = c(c("A", "C", "T", "G", "N", "-", ""),
-                                        ambig_codes, c(">","<")))
+
+  ambig_codes <- c('K','M','R','Y','S','W','B','V','H','D')
+  dna_chrs <- c(c("A", "C", "T", "G", "N", "-", ""), ambig_codes, c(">","<"))
+  extra <- setdiff(m$value, dna_chrs)
+
+  m$value <- factor(m$value, levels = c(dna_chrs, extra))
   m$isref <- as.character(ifelse(m$Var1 == "Reference", 1, 0.75))
-  m_cols <- c(c("#4daf4a", "#377eb8", "#e41a1c", "#000000", "#CCCCCC","#FFFFFF",
-                "#FFFFFF"), rep("#CCCCCC", length(ambig_codes) + 2))
-  names(m_cols) <- c(c("A", "C", "T", "G", "N","-"), ambig_codes, c(">", "<"))
+
+  m_cols <- c(c("#4daf4a", "#377eb8", "#e41a1c", "#000000", "#CCCCCC",
+                "#FFFFFF", "#FFFFFF"), 
+                 rep("#CCCCCC", length(ambig_codes) + 2),
+                 rep("#FFFFFF", length(extra)))
+  names(m_cols) <- levels(m$value)
   m$cols <- m_cols[m$value]
   m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
   return(m)

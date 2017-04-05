@@ -788,7 +788,8 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
       alns <- alns[start(alns) <= start(target) & end(alns) >= end(target) &
                    seqnames(alns) == as.character(seqnames(target))]
     } else {
-      alns <- alns[queryHits(findOverlaps(alns, target, minoverlap = minoverlap))]
+      alns <- alns[queryHits(findOverlaps(alns, target,
+                               minoverlap = minoverlap, ignore.strand = TRUE))]
     }
     if (length(alns) == 0){ return(GenomicAlignments::GAlignments()) }
 

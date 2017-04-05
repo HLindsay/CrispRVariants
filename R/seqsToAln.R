@@ -14,7 +14,7 @@
 #'@param aln_start Genomic start locations of aligned sequences. Should be
 #'used in conjunction with target_start and target_end.
 #'@param reverse_complement (Default: FALSE)
-#'@param allow.partial Are alignments that do not span the target region allowed?
+#'@param allow_partial Are alignments that do not span the target region allowed?
 #'(Default: FALSE)
 #'@return The sequences with insertions collapsed and deletions padded
 #'@rdname seqsToAln

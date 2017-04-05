@@ -868,7 +868,7 @@ minimum arguments required for running CrispRVariants::plotAlignments.
 
 # Get a reference sequence
 library("CrispRVariants")
-data(gol_clutch1)
+data("gol_clutch1")
 ref <- gol$ref
 
 #Then to make the plot:
