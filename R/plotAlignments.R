@@ -337,11 +337,11 @@ setDNATileColours <- function(m){
 
   m$value <- as.character(m$value)
   m$value <- factor(m$value, levels = c(c("A", "C", "T", "G", "N", "-", ""),
-                                        ambig_codes))
+                                        ambig_codes, c(">","<")))
   m$isref <- as.character(ifelse(m$Var1 == "Reference", 1, 0.75))
   m_cols <- c(c("#4daf4a", "#377eb8", "#e41a1c", "#000000", "#CCCCCC","#FFFFFF",
-                "#FFFFFF"), rep("#CCCCCC", length(ambig_codes)))
-  names(m_cols) <- c(c("A", "C", "T", "G", "N","-"), ambig_codes)
+                "#FFFFFF"), rep("#CCCCCC", length(ambig_codes) + 2))
+  names(m_cols) <- c(c("A", "C", "T", "G", "N","-"), ambig_codes, c(">", "<"))
   m$cols <- m_cols[m$value]
   m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
   return(m)

@@ -47,6 +47,9 @@ setGeneric("readsToTarget", function(reads, target, ...) {
 #' strand from the target or "positive" (reads are displayed on the forward
 #' strand regardless of the strand of the target)   (Default:"target") 
 #'@param verbose Print progress and statistics (Default: TRUE)
+#'@param minoverlap Minimum number of bases the aligned read must 
+#' share with the target site.  If not specified, the aligned
+#' read must completely span the target region.  (Default: NULL)
 #'@return (signature("GAlignments", "GRanges")) A \code{\link{CrisprRun}} object
 #'@examples
 #'# Load the metadata table
@@ -68,7 +71,7 @@ setGeneric("readsToTarget", function(reads, target, ...) {
 setMethod("readsToTarget", signature("GAlignments", "GRanges"),
           function(reads, target, ..., reverse.complement = TRUE,
                    chimeras = NULL, collapse.pairs = FALSE, use.consensus = FALSE,
-                   store.chimeras = FALSE, verbose = TRUE, name = NULL,
+                   store.chimeras = FALSE, verbose = TRUE, name = NULL, minoverlap = NULL,
                    orientation = c("target","opposite","positive")){
 
             if (length(target) > 1){
@@ -127,10 +130,13 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
               }
             }
 
+            # To do: check whether this is redundant with narrowAlignments
             # Filter out reads that don't span the target region
             # Not using findOverlaps because reads may be paired, i.e. names nonunique
-            bam <- reads[start(reads) <= start(target) & end(reads) >= end(target) &
-                         seqnames(reads) == as.character(seqnames(target))]
+            if (is.null(minoverlap)){
+              bam <- reads[start(reads) <= start(target) & end(reads) >= end(target) &
+                           seqnames(reads) == as.character(seqnames(target))]
+            } else { bam <- reads }
 
             if (isTRUE(verbose)){
               message(sprintf("%s of %s nonchimeric reads span the target range\n",
@@ -150,7 +156,7 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
 
             # narrow aligned reads
             result <- narrowAlignments(bam, target, reverse.complement = rc,
-                                       verbose = verbose)
+                                    verbose = verbose, minoverlap = minoverlap)
             gen_ranges <- GenomicAlignments::cigarRangesAlongReferenceSpace(
                              cigar(result), pos = start(result))
 
@@ -186,7 +192,7 @@ setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
                    names = NULL, reverse.complement = TRUE, target.loc = 17,
                    chimeras = NULL, collapse.pairs = FALSE, use.consensus = FALSE,
                    orientation = c("target","opposite","positive"),
-                   verbose = TRUE){
+                   minoverlap = NULL, verbose = TRUE){
 
     # Deal with potentially empty chimeras
     # check that lengths of reads and chimeras are either 0 or the same
@@ -202,7 +208,7 @@ setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
 
     cset <- alnsToCrisprSet(reads, reference, target, reverse.complement,
                             collapse.pairs, names, use.consensus, target.loc,
-                            verbose, chimeras = chimeras,
+                            verbose, chimeras = chimeras, minoverlap = minoverlap,
                             orientation = orientation, ...)
     cset
 })
@@ -224,7 +230,7 @@ setMethod("readsToTarget", signature("character", "GRanges"),
                    chimeras = c("count","exclude","ignore", "merge"),
                    collapse.pairs = FALSE, use.consensus = FALSE,
                    orientation = c("target","opposite","positive"),
-                   names = NULL, verbose = TRUE){
+                   names = NULL, minoverlap = NULL, verbose = TRUE){
 
             # Make sure the reference sequence consists of one sequence
             # Coerce to "DNA string if necessary"
@@ -261,8 +267,9 @@ setMethod("readsToTarget", signature("character", "GRanges"),
             orientation <- match.arg(orientation)
                         
             cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
-                                    collapse.pairs, names, use.consensus, target.loc,
-                                    verbose = verbose, chimeras = chimeras, 
+                                    collapse.pairs, names, use.consensus,
+                                    target.loc, verbose = verbose,
+                                    chimeras = chimeras, minoverlap = minoverlap,
                                     orientation = orientation, ...)
 
             cset
@@ -569,7 +576,7 @@ separateChimeras <- function(bam, targets, tolerance = 5,
 alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
                             collapse.pairs, names, use.consensus, target.loc,
                             verbose, orientation, chimeras = NULL,
-                            store.chimeras = FALSE, ...){
+                            store.chimeras = FALSE, minoverlap = NULL, ...){
 
     crispr.runs <- lapply(seq_along(alns), function(i){
       aln <- alns[[i]]
@@ -583,24 +590,25 @@ alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
       crun <- readsToTarget(aln, target = target,
                 reverse.complement = reverse.complement, chimeras = chim,
                 collapse.pairs = collapse.pairs, use.consensus = use.consensus,
-                verbose = verbose, name = names[i], orientation = orientation)
+                verbose = verbose, name = names[i], orientation = orientation,
+                minoverlap = minoverlap)
       crun
     })
 
     to_rm <- sapply(crispr.runs, is.null)
     if (any(to_rm)){
-    if (verbose){
-      rm_nms <- paste0(names[to_rm], collapse = ",", sep = "\n")
-      message(sprintf("Excluding samples that have no on target reads:\n%s",
-                  rm_nms))
+      if (verbose){
+        rm_nms <- paste0(names[to_rm], collapse = ",", sep = "\n")
+        message(sprintf("Excluding samples that have no on target reads:\n%s",
+                    rm_nms))
+      }
+      crispr.runs <- crispr.runs[!to_rm]
+      names <- names[!to_rm]
+      if (length(crispr.runs) == 0) {
+        warning("Could not narrow reads to target, no samples have on-target alignments")
+        return()
+      }
     }
-    crispr.runs <- crispr.runs[!to_rm]
-    names <- names[!to_rm]
-    if (length(crispr.runs) == 0) {
-      warning("Could not narrow reads to target, no samples have on-target alignments")
-      return()
-    }
-  }
 
     rc <- rcAlns(as.character(strand(target)), orientation)
 
@@ -743,6 +751,9 @@ rcAlns <- function(target.strand, orientation){
 #'@param target A GRanges object
 #'@param reverse.complement Should the aligned reads be reverse complemented?
 #'@param verbose (Default: FALSE)
+#'@param minoverlap Minimum overlapping region between alignments and target.
+#'If not specified, alignments must span the entire target region.
+#'(Default: NULL)
 #'@param ... additional arguments
 #'@author Helen Lindsay
 #'@rdname narrowAlignments
@@ -760,7 +771,8 @@ setGeneric("narrowAlignments", function(alns, target, ...) {
 #'           strand = "+")
 #'narrowAlignments(bam, target, reverse.complement = FALSE)
 setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
-          function(alns, target, ..., reverse.complement, verbose = FALSE){
+          function(alns, target, ..., reverse.complement,
+                   minoverlap = NULL, verbose = FALSE){
 
     # Narrowing example:
     # 3-4-5-6-7-8-9-10 Read
@@ -771,9 +783,13 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     # Notes:
     # Cannot directly narrow the alignments as the seqs aren't narrowed
     # and want to keep indel operations bordering targe range
-
-    # alns must span target
-    alns <- alns[start(alns) <= start(target) & end(alns) >= end(target)]
+    if (is.null(minoverlap)){
+      # alns must span target
+      alns <- alns[start(alns) <= start(target) & end(alns) >= end(target) &
+                   seqnames(alns) == as.character(seqnames(target))]
+    } else {
+      alns <- alns[queryHits(findOverlaps(alns, target, minoverlap = minoverlap))]
+    }
     m_cols <- as.list(mcols(alns))
     if ("qual" %in% names(m_cols) & ! "seq" %in% names(m_cols)){
       stop("Metadata col 'seq' must be present if 'qual' is present")
@@ -784,7 +800,6 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     ref_ranges <- GenomicAlignments::cigarRangesAlongReferenceSpace(cigar(alns))
     genomic <- GenomicRanges::shift(ref_ranges, start(alns)-1)
 
-    # is unlist/relist needed
     # Find the on target operations
     clipped <- unlist(GenomicAlignments::explodeCigarOps(cigar(alns)))
     clipped <- clipped %in% c("S","H")
@@ -797,9 +812,10 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     last_on_tg <- ! duplicated(on_target, fromLast = TRUE) & on_target
 
     # Find cases where the first or last on target operation is a match ("M")
+    # and operations overlap boundaries (partial alignments do not need trimming)
     ops <- unlist(explodeCigarOps(cigar(alns)))
-    first_op_m <- ops[unlist(first_on_tg)] == "M"
-    last_op_m <- ops[unlist(last_on_tg)] == "M"
+    first_op_m <- ops[unlist(first_on_tg)] == "M" & start(alns) < start(target)
+    last_op_m <- ops[unlist(last_on_tg)] == "M"  & end(alns) > end(target)
 
     # Narrow border "M" operations to match target
     # need to know where the target start (genomic) is wrt sequence (query) coordinates
@@ -809,6 +825,8 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
 
     genomic_offset_fom <- start(target) - start(genomic)[first_on_tg][first_op_m]
     sq_starts[first_op_m] <- sq_starts[first_op_m] + genomic_offset_fom
+    
+    # Adjust the genomic starting location for the alignments that will be narrowed
     genomic_starts <- start(genomic)[first_on_tg]
     genomic_starts[first_op_m] <- start(target)
 

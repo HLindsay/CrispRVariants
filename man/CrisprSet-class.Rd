@@ -58,7 +58,7 @@ represented as CrisprRun objects.  CrisprRun objects with no on-target
 reads are excluded.
 CrisprSet objects are constructed with \code{\link{readsToTarget}} or
 \code{\link{readsToTargets}}.  For most use cases, a CrisprSet object should not
-be accessed directly.
+be initialized directly.
 }
 \section{Fields}{
 
@@ -241,7 +241,7 @@ Return value:
 
 \item{\code{plotVariants(min.freq = 0, min.count = 0, top.n = nrow(.self$cigar_freqs),
   renumbered = .self$pars["renumbered"], add.other = add.other,
-  create.plot = TRUE, ...)}}{Description:
+  create.plot = TRUE, allow.partial = TRUE, ...)}}{Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
   of variants, then plots variants with respect to the reference sequence,
   collapsing insertions and displaying insertion sequences below the plot.
@@ -262,6 +262,7 @@ Input parameters:
                     if there are any (Default: TRUE)
   create.plot       Data is plotted if TRUE and returned without if FALSE.
                     (Default: TRUE)
+  allow.partial        Should partial alignments be allowed?  (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:

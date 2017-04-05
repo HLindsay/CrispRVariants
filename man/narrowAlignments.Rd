@@ -9,7 +9,7 @@
 narrowAlignments(alns, target, ...)
 
 \S4method{narrowAlignments}{GAlignments,GRanges}(alns, target, ...,
-  reverse.complement, verbose = FALSE)
+  reverse.complement, minoverlap = NULL, verbose = FALSE)
 }
 \arguments{
 \item{alns}{A GAlignments object including a metadata column "seq"
@@ -20,6 +20,10 @@ containing the sequence}
 \item{...}{additional arguments}
 
 \item{reverse.complement}{Should the aligned reads be reverse complemented?}
+
+\item{minoverlap}{Minimum overlapping region between alignments and target.
+If not specified, alignments must span the entire target region.
+(Default: NULL)}
 
 \item{verbose}{(Default: FALSE)}
 }

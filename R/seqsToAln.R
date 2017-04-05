@@ -31,8 +31,8 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
     if (! is.null(aln_start)){
       shifts <- aln_start - GenomicAlignments::start(target)
       result <- Biostrings::stackStrings(result, shift = shifts, from = 1,
-                 to = width(target), Lpadding.letter = "+", Rpadding.letter = "+")
-      if (! isTRUE(allow_partial) & isTRUE(any(grep("\\+", result)))){
+                 to = width(target), Lpadding.letter = "+", Rpadding.letter = ".")
+      if (! isTRUE(allow_partial) & isTRUE(any(grep("\\+|\\.", result)))){
         stop(paste("When allow_partial is FALSE, dnaseq to be",
                    "trimmed must span the target location"))
       }
@@ -42,5 +42,6 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
       result <- Biostrings::reverseComplement(result)
     }
     result <- as.character(result)
+    result <- gsub("\\.", "<", gsub("\\+", ">", result))
     result
 }

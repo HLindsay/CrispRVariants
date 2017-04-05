@@ -234,7 +234,11 @@ Input parameters:
     } else {
       temp[complex] <- sapply(temp[complex], paste, collapse = ",")
     }
-    temp[sum(keep) == 0] <- match.label
+    
+    spans <- width(.self$alns) == nchar(ref) 
+    temp[sum(keep) == 0 & spans] <- match.label
+    temp[sum(keep) == 0 & ! spans] <- cigs[sum(keep) == 0 & ! spans]
+
     renamed <- as.character(temp)
     
     if (isTRUE(separate.snv)){

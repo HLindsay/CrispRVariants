@@ -5,7 +5,7 @@
 #'reads are excluded.
 #'CrisprSet objects are constructed with \code{\link{readsToTarget}} or
 #'\code{\link{readsToTargets}}.  For most use cases, a CrisprSet object should not
-#'be accessed directly.
+#'be initialized directly.
 #'@param crispr.runs A list of CrisprRun objects, typically representing individual samples
 #'within an experiment
 #'@param reference The reference sequence, must be the same length as the target region
@@ -827,7 +827,8 @@ See also:
   plotVariants = function(min.freq = 0, min.count = 0,
                    top.n = nrow(.self$cigar_freqs),
                    renumbered = .self$pars["renumbered"],
-                   add.other = add.other, create.plot = TRUE, ...){
+                   add.other = add.other, create.plot = TRUE,
+                   allow.partial = TRUE, ...){
 '
 Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
@@ -850,6 +851,7 @@ Input parameters:
                     if there are any (Default: TRUE)
   create.plot       Data is plotted if TRUE and returned without if FALSE.
                     (Default: TRUE)
+  allow.partial	    Should partial alignments be allowed?  (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:
@@ -864,7 +866,7 @@ Return value:
       add.other <- FALSE
     }
 
-    alns <- .self$makePairwiseAlns(cig_freqs)
+    alns <- .self$makePairwiseAlns(cig_freqs, allow_partial = allow.partial)
     dots <- list(...)
 
     # Set the location for the vertical line indicating the zero point

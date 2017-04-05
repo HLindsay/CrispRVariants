@@ -5,7 +5,7 @@
 \title{Creates a text alignment from a set of cigar strings}
 \usage{
 seqsToAln(cigar, dnaseq, target, del_char = "-", aln_start = NULL,
-  reverse_complement = FALSE)
+  reverse_complement = FALSE, allow_partial = FALSE)
 }
 \arguments{
 \item{cigar}{A list of cigar strings to align}
@@ -21,6 +21,9 @@ the target region are trimmed to exactly match it.}
 used in conjunction with target_start and target_end.}
 
 \item{reverse_complement}{(Default: FALSE)}
+
+\item{allow.partial}{Are alignments that do not span the target region allowed?
+(Default: FALSE)}
 }
 \value{
 The sequences with insertions collapsed and deletions padded

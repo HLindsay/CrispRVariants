@@ -16,19 +16,21 @@ readsToTarget(reads, target, ...)
 \S4method{readsToTarget}{GAlignments,GRanges}(reads, target, ...,
   reverse.complement = TRUE, chimeras = NULL, collapse.pairs = FALSE,
   use.consensus = FALSE, store.chimeras = FALSE, verbose = TRUE,
-  name = NULL, orientation = c("target", "opposite", "positive"))
+  name = NULL, minoverlap = NULL, orientation = c("target", "opposite",
+  "positive"))
 
 \S4method{readsToTarget}{GAlignmentsList,GRanges}(reads, target, ...,
   reference = reference, names = NULL, reverse.complement = TRUE,
   target.loc = 17, chimeras = NULL, collapse.pairs = FALSE,
   use.consensus = FALSE, orientation = c("target", "opposite", "positive"),
-  verbose = TRUE)
+  minoverlap = NULL, verbose = TRUE)
 
 \S4method{readsToTarget}{character,GRanges}(reads, target, ..., reference,
   reverse.complement = TRUE, target.loc = 17, exclude.ranges = GRanges(),
   exclude.names = NA, chimeras = c("count", "exclude", "ignore", "merge"),
   collapse.pairs = FALSE, use.consensus = FALSE, orientation = c("target",
-  "opposite", "positive"), names = NULL, verbose = TRUE)
+  "opposite", "positive"), names = NULL, minoverlap = NULL,
+  verbose = TRUE)
 
 readsToTargets(reads, targets, ...)
 
@@ -75,6 +77,10 @@ the sequence of the first read is used.  Can be very slow. (Default: FALSE)}
 \item{verbose}{Print progress and statistics (Default: TRUE)}
 
 \item{name}{An experiment name for the reads.  (Default: NULL)}
+
+\item{minoverlap}{Minimum number of bases the aligned read must 
+share with the target site.  If not specified, the aligned
+read must completely span the target region.  (Default: NULL)}
 
 \item{orientation}{One of "target" (reads are displayed on the same
 strand as the target) "opposite" (reads are displayed on the opposite)
