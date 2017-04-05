@@ -790,6 +790,8 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     } else {
       alns <- alns[queryHits(findOverlaps(alns, target, minoverlap = minoverlap))]
     }
+    if (length(alns) == 0){ return(GenomicAlignments::GAlignments()) }
+
     m_cols <- as.list(mcols(alns))
     if ("qual" %in% names(m_cols) & ! "seq" %in% names(m_cols)){
       stop("Metadata col 'seq' must be present if 'qual' is present")
