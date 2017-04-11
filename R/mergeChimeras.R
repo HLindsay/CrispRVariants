@@ -32,12 +32,15 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     #            9-8-7-6
 
     message(paste0("Caution: mergeChimeras assumes a sorted bam file\n",
-                   "The qwidth column in the merged alignments is not\n",
-                   "always correct as clipping is not recalculated.\n"))
+                   "and has only been tested with bwa mem alignments!\n"))
 
-    if (! is.null(chimera_idxs) & length(chimera_idxs) == 0) return(bam)
+    if (is.null(chimera_idxs)){
+        chimera_idxs <- findChimeras(bam)
+    }
 
-    if (is.null(chimera_idxs)) chimera_idxs <- findChimeras(bam)
+    if (length(chimera_idxs) == 0){                          
+        return(list(merged = bam, unmerged = GenomicAlignments::GAlignments()))
+    }
 
     # Do all reads within a chimera map to the same chromosome?
     nms <- rle(names(bam)[chimera_idxs])
@@ -69,7 +72,7 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     # should be less than or equal to the first aligned base of read n wrt the full seq
     cigars <- cigar(bam)[chimera_idxs]
     qrng <- GenomicAlignments::cigarRangesAlongQuerySpace(cigars,
-               before.hard.clipping = TRUE, ops = "M")
+               before.hard.clipping = TRUE, ops = c("M", "I"))
     first_aligned <- min(start(qrng))
     last_aligned <- max(end(qrng))
 
@@ -155,29 +158,43 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
                                  new_cigars[to_cut]))
 
     # Stick cigars together padding segments with deletions
+    
+    ### NEED TO ADJUST ENDS FOR READS TRIMMED
+
     ch_gstarts <- start(bam)[chimera_idxs]
     ch_gends <- end(bam)[chimera_idxs]
-    ggaps <- c(sprintf("%sD", ch_gstarts[-1] - ch_gends[-length(chimera_idxs)] +1),0)
+    ggaps <- c(sprintf("%sD", -1*(ch_gends[-length(chimera_idxs)] - ch_gstarts[-1] +1)),0)
     ggaps[ch_ends] <- ""
     new_cigars <- paste0(new_cigars, ggaps)
 
-
     new_cigars <- aggregate(new_cigars, list(nms_codes), FUN = paste0, collapse = "")$x
 
-
-    chimeras <- bam[chimera_idxs][mergeable][to_cut]
-    remaining <- bam[chimera_idxs][!mergeable | !to_cut]
+    chimeras <- bam[chimera_idxs][mergeable]
+    chimeras <- chimeras[!duplicated(names(chimeras))] # select the leftmost
+    remaining <- bam[chimera_idxs][!mergeable]
     
+    # WARNING: assumption:  The primary alignment is not hard clipped
+    new_cigars <- gsub("H", "S", new_cigars)    
+
     not_suppl <- !bitwAnd(mcols(bam[chimera_idxs])$flag, 2048)
     sqs <- mcols(bam[chimera_idxs])$seq[not_suppl]
     names(sqs) <- names(bam[chimera_idxs])[not_suppl]
-
+    sqs <- unname(sqs[names(chimeras)])
+    keep_chs <- mergeable[!duplicated(nms_codes)]
+   
+    if (any(read_gaps > 0 )){
+      keep_chs <- mergeable[!duplicated(nms_codes)]
+      qrng <- relist(unlist(qrng), IRanges::PartitioningByWidth(nms$lengths))
+      gps <- Biostrings::gaps(qrng)[keep_chs]
+      sqs <- Biostrings::replaceAt(sqs, gps, "")
+    }
+    
     galns <- GAlignments(names = names(chimeras),
                     seqnames = as.factor(seqnames(chimeras)),
-                    pos = start(chimeras), cigar = new_cigars[nms_codes[to_cut]],
+                    pos = start(chimeras), cigar = new_cigars[keep_chs],
                     strand = strand(chimeras),
                     seqlengths = seqlengths(chimeras),
-                    seq = unname(sqs[names(chimeras)]), flag = 0)
+                    seq = sqs, flag = 0)
 
     return(list(merged = galns, unmerged = remaining))
 

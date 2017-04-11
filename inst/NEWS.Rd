@@ -1,6 +1,12 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.3.6}{
+  \itemize{
+    \item Fix in new function mergeChimeras when no chimeras present
+  }
+}
+
 \section{Changes in version 1.3.5}{
   \itemize{
     \item New option "minoverlap" in \code{readsToTarget} allows reads that
