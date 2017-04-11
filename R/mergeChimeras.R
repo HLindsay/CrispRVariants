@@ -159,10 +159,11 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
 
     # Stick cigars together padding segments with deletions
     
-    ### NEED TO ADJUST ENDS FOR READS TRIMMED
-
     ch_gstarts <- start(bam)[chimera_idxs]
     ch_gends <- end(bam)[chimera_idxs]
+    ### NEED TO ADJUST ENDS FOR READS TRIMMED
+    ch_gstarts[to_cut] <- ch_gstarts[to_cut] - read_gaps[to_cut]
+
     ggaps <- c(sprintf("%sD", -1*(ch_gends[-length(chimera_idxs)] - ch_gstarts[-1] +1)),0)
     ggaps[ch_ends] <- ""
     new_cigars <- paste0(new_cigars, ggaps)

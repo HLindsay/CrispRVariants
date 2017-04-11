@@ -827,8 +827,8 @@ See also:
   plotVariants = function(min.freq = 0, min.count = 0,
                    top.n = nrow(.self$cigar_freqs),
                    renumbered = .self$pars["renumbered"],
-                   add.other = add.other, create.plot = TRUE,
-                   allow.partial = TRUE, ...){
+                   add.other = TRUE, create.plot = TRUE,
+                   plot.regions = NULL, allow.partial = TRUE, ...){
 '
 Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
@@ -851,6 +851,7 @@ Input parameters:
                     if there are any (Default: TRUE)
   create.plot       Data is plotted if TRUE and returned without if FALSE.
                     (Default: TRUE)
+  plot.regions      Subregion of the target to plot (Default: NULL)
   allow.partial	    Should partial alignments be allowed?  (Default: TRUE)
   ...               additional arguments for plotAlignments
 

@@ -8,7 +8,7 @@
 #'@author Helen Lindsay
 excludeFromBam <- function(bam, exclude.ranges = GRanges(), exclude.names = NA){
   if (length(exclude.ranges) > 0) bam <- excludeFromBamByRange(bam, exclude.ranges)
-  if (! is.na(exclude.names)) bam <- excludeFromBamByName(bam, exclude.names)
+  if (! anyNA(exclude.names)) bam <- excludeFromBamByName(bam, exclude.names)
   bam
 }
 
