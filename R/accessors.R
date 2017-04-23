@@ -1,5 +1,6 @@
 #'@title Get variant counts
-#'@description Returns a matrix of counts where rows are sequence variants an columns are samples
+#'@description Returns a matrix of counts where rows are sequence variants an columns
+#' are samples
 #'@param obj An object containing variant counts
 #'@param ... Additional arguments
 #'@return A matrix of counts where rows are variants and columns are samples
@@ -13,10 +14,10 @@ setGeneric("variantCounts", function(obj, ...) {
 #'least one sample (Default: 0)
 #'@param min.count (Integer n) Return variants with count greater than n
 #'in at least one sample (Default: 0)
-#'@param top.n  (Integer n) If specified, return variants ranked at least n according
-#' to frequency across all samples (Default: 0, i.e. no cutoff)
-#'@param include.chimeras Should chimeric reads be included in the counts table?
-#'(Default: TRUE)
+#'@param top.n  (Integer n) If specified, return variants ranked at least n
+#' according to frequency across all samples (Default: 0, i.e. no cutoff)
+#'@param include.chimeras Should chimeric reads be included in the counts
+#' table? (Default: TRUE)
 #'@param include.nonindel Should sequences without indels be returned?
 #'(Default:TRUE)
 #'@param result Return variants as either counts ("counts", default) or
@@ -40,14 +41,15 @@ setMethod("variantCounts", signature("CrisprSet"),
                                          include.nonindel = include.nonindel,
                                          type = result)
     if (! is.null(filter.vars)){
-      result <- filterVariants(cig_freqs = result, names = filter.vars)
+      result <- obj$filterVariants(cig_freqs = result, names = filter.vars)
     }
     result
 })
 
 
 #'@title Get mutation efficiency
-#'@description  Returns the percentage of sequences that contain at least one mutation.
+#'@description  Returns the percentage of sequences that contain at least
+#' one mutation.
 #'@param obj An object containing variant counts
 #'@param ... additional arguments
 #'@author Helen Lindsay

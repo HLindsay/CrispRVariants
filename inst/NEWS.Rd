@@ -1,6 +1,15 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.3.7}{
+  \itemize{
+    \item Updates to vignette
+    \item Fix bug removing variants by name in \code{variantCounts}
+    \item Fixed argument \code{legend.symbol.size} being ignored in
+    plotAlignmenta,DNAString-method. 
+  }
+}
+
 \section{Changes in version 1.3.6}{
   \itemize{
     \item Fix in new function mergeChimeras when no chimeras present

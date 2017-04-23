@@ -1,14 +1,15 @@
 ---
 title: "CrispRVariants User Guide"
 author: "Helen Lindsay, Mark Robinson"
-date: "3rd October 2016"
+date: "`r doc_date()`"
+package: "`r pkg_ver('CrispRVariants')`"
 output: 
   BiocStyle::pdf_document:
     fig_caption: true
-    toc: true
 vignette: >
   %\VignetteIndexEntry{CrispRVariants}
   %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 \tableofcontents
@@ -21,30 +22,123 @@ If running all sections remove fastqs with
 unlink("fastq/*")
 -->
 
-```{r style, echo = FALSE, results = 'asis'}
-BiocStyle::markdown()
-options(width = 80)
-```
+
 
 # Introduction
 
 The CRISPR-Cas9 system is an efficient method of introducing mutations into 
-genomic DNA. A guide RNA directs nuclease activity to a 20 nucleotide target
-region, resulting in efficient mutagenesis.  Repair of the cleaved DNA can 
-introduce insertions and deletions centred around the cleavage site.  Once the
-target sequence is mutated, the guide RNA will no longer bind and the DNA will
-not be cleaved again.  SNPs within the target region, depending on their 
-location, may also disrupt cleavage.  The efficiency of a CRISPR-Cas9 experiment
-is typically measured by amplifying and sequencing the region surrounding the 
-target sequence, then counting the number of sequenced reads that have 
-insertions and deletions at the target site.  The **CrispRVariants** package 
-formalizes this process and takes care of various details of managing and 
-manipulating data for such confirmatory and exploratory experiments.
+genomic DNA. A guide RNA directs nuclease activity to an approximately 20
+nucleotide target region, resulting in efficient mutagenesis.  Repair of
+the cleaved DNA can introduce insertions and deletions centred around the
+cleavage site.  Once the target sequence is mutated, the guide RNA will no
+longer bind and the DNA will not be cleaved again.  SNPs within the target
+region, depending on their location, may also disrupt cleavage.  The
+efficiency of a CRISPR-Cas9 experiment is typically measured by amplifying
+and sequencing the region surrounding the target sequence, then counting the
+number of sequenced reads that have insertions and deletions at the target
+site.  The **CrispRVariants** package formalizes this process and takes
+care of various details of managing and manipulating data for such confirmatory
+and exploratory experiments.
 
-This guide shows an example illustrating how raw data is preprocessed and mapped
-and how mutation information is extracted relative to the reference sequence.
-The package comprehensively summarizes and plots the spectrum of variants 
-introduced by CRISPR-Cas9 or similar genome editing experiments.
+This guide shows an example illustrating how raw data is preprocessed and
+mapped and how mutation information is extracted relative to the reference
+sequence. The package comprehensively summarizes and plots the spectrum of
+variants introduced by CRISPR-Cas9 or similar genome editing experiments.
+
+# Quickstart
+
+This section is intended for people familiar with mapping reads and working
+with core Bioconductor classes.  See the case study in the next section 
+for a complete step-by-step analysis.
+
+The ```CrisprSet``` class stores aligned reads which have been trimmed to a target
+region along with annotations of where insertion and deletions are located
+with respect to a specified location.  ```CrisprSet``` objects are created
+using the functions ```readsToTarget```
+(for a single target region) and ```readsToTargets``` (for multiple target
+locations). The following objects are needed to create a ```CrisprSet```
+for a single guide sequence.  For multiple guides, the equivalent 
+parameters to **target** and **reference** are named **targets** and
+**references** respectively.
+
+* *reads* - may be a vector of bam filenames, a ```GAlignments``` object
+   or a ```GAlignmentsList``` object.  Bam files are assumed to represent
+   individual experimental samples (possibly containing reads from more
+   than one guide).  If the bam files contain multiplexed
+   reads that should be separated into groups, first read the alignments
+   into R, separate as required and then provide the separated alignments
+   to ```readsToTarget```.  (See package [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html)
+   for more details about ```GAlignments``` and ```GAlignmentsList``` objects).  
+* *target* - A ```GRanges``` object indicating the genomic range to analyse.
+  The sequence name and coordinates should match regions found in the bam file(s).
+  For ```readsToTarget```, the ```target``` must contain a single range.  The target
+  range can be found by searching [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) or
+[BLAT](https://genome.ucsc.edu/FAQ/FAQblat.html) for the guide sequence and extending
+  the found range if desired - be careful that the genome used by BLAST matches the 
+  genome used for mapping!  Alternatively, the target region
+  can be found by mapping the guide sequence to the genome or amplicon reference with a short
+  read aligner (we typically use **bwa fastmap**); or if reference sequence
+  is not too large by reading the reference sequence into R and using ```gregexpr```
+  to search the reference for the guide sequence. (See package [GenomicRanges](http://bioconductor.org/packages/release/bioc/html/GenomicRanges.html)
+  for more details about ```GRanges``` objects).  
+* *reference* - A ```DNAString``` object, containing the reference sequence at the
+  target location.  This can be fetched from the genome using the command line
+  tool ```samtools faidx``` or from within R using the Bioconductor package
+  ```RSamtools```; fetched from a ```BSgenome``` object using ```Biostrings::getSeq```;
+  or reconstructed from a bam file using the CrispRVariants function ```refFromAlns```
+  providing the bam file has an MD tag. (See package
+  [Biostrings](http://bioconductor.org/packages/release/bioc/html/Biostrings.html)
+  for more details about ```DNAString``` objects).
+  
+*  *target.loc* This is the base that should be considered base zero, with respect
+   to the target.  For example, if using a 23 nucleotide guide + PAM sequence as the
+   reference, the target.loc would be 17, meaning that bases 17 and 18 are numbered
+  -1 and 1 respectively.  If considering the 23bp guide region plus 10 bases on both
+  sides, the target.loc would be 27.
+
+Other important ```readsToTarget``` parameters:
+
+*  If the bam file contains **paired end** data, set `collapse.pairs = TRUE` so
+   that each read pair is only counted once.
+*  By default CrispRVariants is conservative when dealing with **large gaps**, and
+  requires one mapped endpoint to be within 5 bases of the target.loc.
+  To change this, increase the value of the parameter chimera.to.target, e.g.
+  `chimera.to.target = 200`
+*  If the parameter **names** is set, the sample names will be used when plotting.
+*  If using *readsToTargets*, providing *primer.ranges* (amplicon ranges) as
+   well as *targets* will help CrispRVariants disambiguate reads from nearby
+   guide sequences.
+*  By default, CrispRVariants displays the variant alleles with respect to the
+   **strand** of the target.  To change this behaviour, set ``orientation = "positive"``
+   to always display with respect to the plus strand or ``orientation = "opposite"``
+   to display the opposite strand to the target.
+*  Long gaps are typically mapped in separate segments.  These are called
+  **chimeric** mappings.  In this release CrispRVariants introduces an
+  experimental parameter `chimeras = "merge"`, which reconstructs a linear
+  alignment for the simplest case of two aligned regions separated by a large
+  gap with at most 10 bases multi-mapped to both segments.  Setting
+  `chimeras = "merge"` means that these simple, "long-gap" chimeras can
+  be counted and displayed separately from more complex chimeric reads.
+  However, be aware that the exact endpoints of the gaps may be ambiguous and
+  we do not at present have a method for indicating ambiguous mapping.
+*  If considering a **large region**, e.g. the entire amplicon, use the minoverlap
+  parameter to set the minimum number of aligned positions overlapping the
+  target required for a read to be counted.  For example, `minoverlap = 10`
+  means that reads with an aligned range spanning at least 10 bases of the
+  target will be counted.
+  
+Assuming the above parameters are defined, the following code will set up
+a CrisprSet object and plot the variants:
+
+```{r, eval = FALSE}
+crispr_set <- readsToTarget(reads, target = target, reference = reference,
+                            target.loc = target.loc)
+plotVariants(crispr_set)
+# or use plotVariants(crispr_set, txdb) to additionally show the target
+# location with respect to the transcripts if a Transcript Database 
+# txdb is available
+```
+
 
 # Case study: Analysis of ptena mutant spectrum in zebrafish
 
@@ -56,7 +150,7 @@ This data set is from 5 separate clutches of fish (1 control - uninjected, 2
 injected with strong phenotype, 2 injected with mild phenotype), with injections
 from a guide against the *ptena* gene.  For this exercise, the raw data comes as
 AB1 (Sanger) format.  To convert AB1 files to FASTQ, we use ab1ToFastq(), which
-is a wrapper for functions in **sangerseqR** package with additional quality 
+is a wrapper for functions in the "sangerseqR" package with additional quality 
 score trimming.
 
 Although there are many ways to organize such a project, we organize the data
@@ -136,16 +230,46 @@ for(i in 1:length(fq_fnames)) {
 See the help for **bwa index** at the [bwa man page](http://bio-bwa.sourceforge.net/bwa.shtml)
 and for general details on mapping sequences to a genome reference.
 
-## Read in BAM files and initialize CrisprSet object
+## List the BAM files
+
+To allow easy matching to experimental condition (e.g., useful for colour labeling)
+and for subsetting to experiments of interest, we often organize the list of BAM
+files together with accompanying metadata in a machine-readable table beforehand.
+Here we read the bam filenames from a metadata table which also contains sample
+names and experimental grouping information. Note that we could also have used the
+bam filenames listed above.
+
+```{r, message=FALSE}
+# The metadata and bam files for this experiment are included with CrispRVariants
+library("gdata")
+md_fname <- system.file(package="CrispRVariants", "extdata/metadata/metadata.xls")
+md <- gdata::read.xls(md_fname, 1)
+md
+
+# Get the bam filenames from the metadata table
+bam_dir <- system.file(package="CrispRVariants", "extdata/bam")
+bam_fnames <- file.path(bam_dir, md$bamfile)
+
+# check that all files exist
+all( file.exists(bam_fnames) )
+```
+
+
+## Create the target location and reference sequence
 
 Given a set of BAM files with the amplicon sequences of interest mapped to the
 reference genome, we need to collect a few additional pieces of information
 about the guide sequence and define the area around the guide that we want to
 summarize the mutation spectrum over.
 
-If you already know the coordinates, these can be typed in or put in a BED file
-that can be read in using the **rtracklayer** package.  The import() commmand
-below returns a GRanges object.
+The coordinates of the region of interest can be obtained by running
+[BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi) or
+[BLAT](https://genome.ucsc.edu/FAQ/FAQblat.html) on the guide sequence or
+by mapping the guide sequence to the reference sequence.  The
+coordinates, or "target" should be represented as a **GenomicRanges::GRanges**
+object.  This can be created directly, but here we will import the coordinates
+of the guide sequence from a BED file using the **rtracklayer** package.
+The import() commmand below returns a GRanges object.
 
 ```{r, message=FALSE}
 library(rtracklayer)
@@ -155,11 +279,13 @@ gd <- rtracklayer::import(gd_fname)
 gd
 ```
 
-Below, we'll extend the guide region by 5 bases on each side when counting variants.
-The guide designed for *ptena* (including PAM) is 23bp and is located on chromosome
-`r as.character(seqnames(gd)[1])` from `r start(gd)[1]`-`r end(gd)[1]`.  Note that
-the expected cut site (used later for labeling variants), after extension, is 
-at base 22 with respect to the start of the guide sequence.
+The 23bp (including PAM) *ptena* guide sequence used in this experiment is
+located on chromosome `r as.character(seqnames(gd)[1])` from 
+`r start(gd)[1]`-`r end(gd)[1]`.  We prefer to analyse a slightly larger
+region.  Below, we'll extend the guide region by 5 bases on each side when
+counting variants.  Note that the expected cut site (used later for labeling
+variants), after extension, isat base 22 with respect to the start of the new
+target sequence.
 
 ```{r, message=FALSE}
 gdl <- GenomicRanges::resize(gd, width(gd) + 10, fix = "center")
@@ -168,8 +294,9 @@ gdl <- GenomicRanges::resize(gd, width(gd) + 10, fix = "center")
 With the Bioconductor **BSgenome** packages, the reference sequence itself can be
 retrieved directly into a DNAStringSet object.  For other genomes, the reference
 sequence can be retrieved from a genome by first indexing the genome with samtools
-faidx and then fetching the required region.  Here we are using the GRCHz10
-zebrafish genome.  The reference sequence was fetched and saved as follows:
+faidx and then fetching the required region (for an alternative method, see the 
+note for Windows and Galaxy users below). Here we are using the GRCHz10 zebrafish
+genome.  The reference sequence was fetched and saved as follows:
 
 ```{r, eval=FALSE}
 system("samtools faidx GRCHz10.fa.gz")
@@ -193,24 +320,34 @@ reference
 
 Note the NGG sequence (here, TGG) is present with the 5 extra bases on the end.
 
-To allow easy matching to experimental condition (e.g., useful for colour labeling)
-and for subsetting to experiments of interest, we often organize the list of BAM
-files together with accompanying metadata in a machine-readable table beforehand:
+### Note for Windows and Galaxy Users
 
-```{r, message=FALSE}
-# The metadata and bam files for this experiment are included with CrispRVariants
-library("gdata")
-md_fname <- system.file(package="CrispRVariants", "extdata/metadata/metadata.xls")
-md <- gdata::read.xls(md_fname, 1)
-md
+If you do not have a copy of the genome you used for mapping on the computer
+you are using to analyse your data, or you cannot install *samtools* because
+you are working on Windows, *CrispRVariants* provides an alternative, albeit
+slower, method for fetching the reference sequence:
 
-# Get the bam filenames from the metadata table
-bam_dir <- system.file(package="CrispRVariants", "extdata/bam")
-bam_fnames <- file.path(bam_dir, md$bamfile)
+```{r, tidy = FALSE}
+# First read the alignments into R.  The alignments must include
+# the read sequences and the MD tag
+alns <- GenomicAlignments::readGAlignments(bam_fnames[[1]], 
+          param = Rsamtools::ScanBamParam(tag = "MD", what = c("seq", "flag")),
+          use.names = TRUE)
 
-# check that all files exist
-all( file.exists(bam_fnames) )
+# Then reconstruct the reference for the target region.
+# If no target region is given, this function will reconstruct
+# the complete reference sequence for all reads.
+rfa <- refFromAlns(alns, gdl)
+
+# The reconstructed reference sequence is identical to the sequence
+# extracted from the reference above
+print(rfa == reference)
 ```
+
+Note that the object ```alns``` created above can be directly passed to
+the function ```readsToTarget``` (see below) instead of the bam filenames.
+If there is more than one bam file, ```readsToTarget``` can also accept
+a ```GAlignmentsList``` object (see the [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html) package) for more details).
 
 ## Creating a CrisprSet 
 The next step is to create a CrisprSet object, which is the container that stores
@@ -291,7 +428,7 @@ group <- md$Group
 ```
 
 
-```{r, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
+```{r ptena_plot, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
 p <- plotVariants(crispr_set, txdb = txdb, gene.text.size = 8, 
     row.ht.ratio = c(1,8), col.wdth.ratio = c(4,2),
     plotAlignments.args = list(line.weight = 0.5, ins.size = 2, 
@@ -413,7 +550,7 @@ parameter.  In particular, the *target.loc* is still specified with respect
 to the guide sequence and the reference is still the guide sequence, not
 its reverse complement.
 
-```{r, fig.width = 8.5, fig.height = 7.5, message = FALSE}
+```{r, fig.width = 8.5, fig.height = 7.5, message = FALSE, warning = FALSE}
 
 crispr_set_rev <- readsToTarget(bam_fnames, target = gdl, reference = reference,
                                 names = md$Short.name, target.loc = 22, 
@@ -423,6 +560,58 @@ plotVariants(crispr_set_rev)
 
 Note that variants are labelled with respect to their leftmost coordinate,
 so the labelled variant location changes when plotting on the opposite strand.
+
+# Multiple guides
+
+```CrispRVariants``` accepts an arbitrarily long reference sequence and target region.
+By default, reads must span the target region to be counted. Since v1.3.6, a new
+argument ```minoverlap``` to ```readsToTarget``` is available, which allows reads
+which do not span the target region to be counted, provided they have at least 
+```minoverlap``` aligned bases overlapping the target.  This is particularly important
+when the target region is close to or greater than the sequencing read length.
+
+When using CrispRVariants with multiple guides, initialisation of a ```CrisprSet```
+object is done as for a single guide, but with the ```reference``` and ```target```
+parameters corresponding to a region spanning the guides of interest.   One
+important parameter is the target location, or ```target.loc``` which determines
+how the variant alleles are numbered. For a single guide, position zero would 
+typically be the cut site.  With multiple guides, possible zero points might
+include the cut site of the leftmost guide or the first base of the amplified
+sequence.  Multiple guide sequences are first indicated at the stage of plotting.  
+
+In the example below, we reuse the *ptena* data used in the case study.  In this
+experiment, a single guide was injected.  However, for illustrative purposes we
+will treat the data as if it was a paired injection of two nearby guides.
+
+
+```{r, warning = FALSE}
+# We create a longer region to use as the "target"
+# and the corresponding reference sequence
+gdl <- GenomicRanges::resize(gd, width(gd) + 20, fix = "center")
+reference <- Biostrings::DNAString("TCATTGCCATGGGCTTTCCAGCCGAACGATTGGAAGGTGTTTA")
+
+# At this stage, target should be the entire region to display and target.loc should
+# be the zero point with respect to this region
+crispr_set <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                            names = md$Short.name, target.loc = 10,
+                            verbose = FALSE)
+
+# Multiple guides are added at the stage of plotting
+# The boundaries of the guide regions must be specified with respect to the
+# given target region
+p <- plotVariants(crispr_set, 
+       plotAlignments.args = list(pam.start = c(6,35),
+                              target.loc = c(10, 32),
+                              guide.loc = IRanges::IRanges(c(6, 25),c(20, 37))))
+p
+```
+
+In the above call to ```plotAlignments```, ```pam.start``` and ```pam.end``` control
+where the box around the PAM sequence is drawn, ```target.loc``` controls where vertical
+lines are drawn (note this does not have to match the ```target.loc``` passed to
+```readsToTarget```), and ```guide.loc``` controls where the box around the guide is
+drawn.
+
 
 # Changing the appearance of plots
 
@@ -481,7 +670,7 @@ txdb <- AnnotationDbi::loadDb(txdb_fname)
 
 Here is the ptena data set plotted with default options:
 
-```{r, fig.height = 5}
+```{r, fig.height = 5, warning = FALSE}
 p <- plotVariants(crispr_set, txdb = txdb)
 ```
 
@@ -491,15 +680,16 @@ The layout of this plot is controlled mainly by two parameters:
 plot and the other plots.  Below we show how to change the ratio
 so that the transcript plot is relatively larger:
 
-```{r, fig.height = 5}
+```{r, fig.height = 5, warning = FALSE}
 p <- plotVariants(crispr_set, txdb = txdb, row.ht.ratio = c(1,3))
 ```
+
 Similarly, ```col.wdth.ratio``` controls the width ratio of the
 alignment plot and the heatmap (default ```c(2,1)```, i.e. the
 alignment plot is twice as wide as the heatmap).  Below we alter
 this to make the alignment plot comparatively wider:
 
-```{r, fig.height = 5, message = FALSE}
+```{r, fig.height = 5, message = FALSE, warning = FALSE}
 p <- plotVariants(crispr_set, txdb = txdb, col.wdth.ratio = c(4,1))
 ```
 
@@ -508,17 +698,18 @@ The remaining examples in this section use the *gol* data set.
 ```{r}
 # Load gol data set
 library("CrispRVariants")
-data(gol_clutch1)
+data("gol_clutch1")
 ```
+
 The data used in ```plotAlignments``` and ```plotFreqHeatmap``` can
 be filtered by either frequency via ```min.freq```, count via 
 ```min.count```, or to show a set number of alleles sorted by frequency,
 via ```top.n```.  Within ```plotVariants```, these filtering options
-need to be set for both ```plotAlignments`` and ```plotFreqHeatmap```.
+need to be set for both ```plotAlignments``` and ```plotFreqHeatmap```.
 We also add space to the bottom of the plot to prevent clipping of the
 labels.
 
-```{r, fig.height = 2.5, message = FALSE}
+```{r, fig.height = 2.5, message = FALSE, warning = FALSE}
 library(GenomicFeatures)
 p <- plotVariants(gol, plotAlignments.args = list(top.n = 3),
              plotFreqHeatmap.args = list(top.n = 3),
@@ -527,9 +718,9 @@ p <- plotVariants(gol, plotAlignments.args = list(top.n = 3),
 
 At present, filtering by sample (column) is possible for ```plotFreqHeatmap```
 via the ```order``` parameter (which can also be used to reorder columns),
-but not ```plotAlignments``.
+but not ```plotAlignments```.  
 
-```{r, fig.height = 2.5, message = FALSE}
+```{r, fig.height = 2.5, message = FALSE, warning = FALSE}
 plotVariants(gol, plotAlignments.args = list(top.n = 3),
              plotFreqHeatmap.args = list(top.n = 3, order = c(1,5,3)),
              left.plot.margin = ggplot2::unit(c(0.1,0,5,0.2), "lines"))
@@ -543,7 +734,7 @@ The symbols indicating insertions are controlled by four parameters.
 ```ins.size``` (default 3) controls the size of the symbols within the
 plot area.
 
-```{r, fig.height = 2.5}
+```{r, fig.height = 2.5, warning = FALSE}
 plotAlignments(gol, top.n = 3, ins.size = 6)
 ```
 
@@ -559,7 +750,7 @@ only the length of insertions greater then 20bp is shown.  This can
 be changed with the ```max.insertion.size``` parameter.  If there is
 more than one allele, the number of (frequent) alleles is indicated.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 plotAlignments(gol, top.n = 5, max.insertion.size = 25)
 ```
 
@@ -568,7 +759,7 @@ many alleles are displayed at each insertion locus.  In large data sets,
 there will be a substantial proportion of reads with sequencing errors, 
 and we may only wish to display the most common sequences.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 # Here we set a fairly high value of 50% for min.insertion.freq
 # As ambiguous nucleotides occur frequently in this data set,
 # there are no alleles passing this cutoff.
@@ -579,7 +770,7 @@ plotAlignments(gol, top.n = 5, min.insertion.freq = 50)
 In this case, alleles longer than ```max.insertion.size``` but less
 frequent than ```min.insertion.freq``` will be collapsed.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 plotAlignments(gol, top.n = 5, max.insertion.size = 25, min.insertion.freq = 50)
 ```
 
@@ -589,13 +780,13 @@ The space between rows is controlled with the ```tile.height``` parameter (defau
 Values closer to 0 increase the space between rows, whilst values closer to 1 decrease the
 space between rows.
 
-```{r, fig.height = 2.5}
+```{r, fig.height = 2.5, warning = FALSE}
 # No white space between rows
 plotAlignments(gol, top.n = 3, tile.height = 1)
 ```
 
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 # More white space between rows
 plotAlignments(gol, top.n = 3, tile.height = 0.3)
 ```
@@ -605,7 +796,7 @@ plotAlignments(gol, top.n = 3, tile.height = 0.3)
 The black box around the guide sequence can be removed by setting 
 ```highlight.guide = FALSE```.
 
-```{r, fig.height = 2.5}
+```{r, fig.height = 2.5, warning = FALSE}
 plotAlignments(gol, top.n = 3, highlight.guide = FALSE)
 ```
 
@@ -613,7 +804,7 @@ By default, the box around the guide is drawn from 17 bases upstream of the
 ```target.loc``` to 6 bases downstream.  For experiments with a truncated guide,
 or other non-standard guide location, the box must be manually specified.
 The guide location can be altered by setting the ```guide.loc``` parameter.
-This can be either an IRanges::IRanges or GenomicRanges::GRanges object.
+This can be either an ```IRanges::IRanges``` or ```GenomicRanges::GRanges``` object.
 
 ```{r, fig.height = 3, message = FALSE}
 library(IRanges)
@@ -623,16 +814,17 @@ plotAlignments(gol, top.n = 3, guide.loc = guide)
 
 ### Text sizes
 
-The text within the alignments is controlled by ```plot.text.size``` (default 0),
-and can be removed completely by setting ```plot.text.size = 0```.  The axis
-labels and legend labels are controlled with ```axis.text.size``` (default 8) and
-```legend.text.size``` (default 6) respectively.  The number of columns in the
-legend is controlled by ```legend.cols``` (default 3).  
+The text showing bases within the alignment plot is controlled by 
+```plot.text.size``` (default 2), and can be removed completely by
+setting ```plot.text.size = 0```.  The axis labels and legend labels
+are controlled with ```axis.text.size``` (default 8) and
+```legend.text.size``` (default 6) respectively.  The number of columns
+in the legend is controlled by ```legend.cols``` (default 3).  
 
 ```{r, fig.height = 2.5}
 # Here we increase the size of the axis labels and make
 # two columns for the legend
-plotAlignments(gol, top.n = 3, axis.text.size = 12, 
+plotAlignments(gol, top.n = 5, axis.text.size = 12, 
                legend.text.size = 12, legend.cols = 2)
 
 ```
@@ -641,7 +833,7 @@ plotAlignments(gol, top.n = 3, axis.text.size = 12,
 
 The argument ```highlight.pam``` determines whether a box around the PAM should be drawn.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 # Don't highlight the PAM sequence
 plotAlignments(gol, top.n = 3, highlight.pam = FALSE)
 ```
@@ -651,7 +843,7 @@ applications might require a different region highlighted.  This can be achieved
 explicitly setting the start and end positions of the box, with respect to the reference
 sequence.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 
 # Highlight 3 bases upstream to 3 bases downstream of the target.loc
 plotAlignments(gol, top.n = 3, pam.start = 19, pam.end = 25)
@@ -663,7 +855,7 @@ box is specified by start and end coordinates.  Both coordinates are with respec
 to the start of the reference sequence.  The box around the guide is slightly wider
 than the box around the PAM.
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 
 plotAlignments(gol, top.n = 3, guide.loc = IRanges(5,10),
                pam.start = 8, pam.end = 13)
@@ -673,39 +865,92 @@ plotAlignments(gol, top.n = 3, guide.loc = IRanges(5,10),
 The thickness of the lines showing the cut site, the guide and the PAM are 
 controlled with ```line.weight``` (default 1).
 
-```{r, fig.height = 3}
+```{r, fig.height = 3, warning = FALSE}
 plotAlignments(gol, top.n = 3, line.weight = 3)
+```
+
+### Add a codon frame
+
+If the codon frame with respect to the first base of the
+target region is known, it can be added to
+```plot.alignments``` using the argument ```codon.frame```
+
+```{r, fig.height = 3, warning = FALSE}
+plotAlignments(gol, top.n = 3, codon.frame = 1)
+```
+
+### Other modifications
+
+To retreive the information used in ```plotAlignments```
+when starting from a ```CrisprSet``` object, use the argument
+`create.plot = FALSE`.
+
+```{r, eval = FALSE}
+plot_data <- plotAlignments(gol, top.n = 3, create.plot = FALSE)
+names(plot_data)
+# This data can be modified as required, then replotted using:
+do.call(plotAlignments, plot_data)
 ```
 
 ## plotFreqHeatmap
 
-Here is the result of calling ```plotFreqHeatmap``` with default
-values, showing the three most common variant alleles.
+```plotFreqHeatmap``` produces a heatmap of the counts or proportions
+of the variant alleles.  Typically, ```plotFreqHeatmap``` is passed
+a ```CrisprSet``` object, but it can also accept a ```matrix``` if greater
+flexibility is required (see below).  As ```plotFreqHeatmap``` returns a
+```ggplot``` object, it can also be modified using standard ```ggplot2```
+syntax.  For example, we add a title to the plot below.  
 
-```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
-plotFreqHeatmap(gol, top.n = 3)
+By default, when given an object of class ```CrisprSet```,
+```plotFreqHeatmap``` shows the allele counts and the header shows
+the total number of on-target reads in each sample. For example,
+the following code shows the three most common variant alleles in
+the gol dataset.  The header here does not equal the sum of the
+columns as not all variants are shown in the plot.
+
+```{r hmap_default, fig.height = 3, fig.width = 4, fig.align='center', fig.cap = "plotFreqHeatmap with default options"}
+# Save the plot to a variable then add a title using ggplot2 syntax.
+# If the plot is not saved to a variable the unmodified plot is displayed.
+p <- plotFreqHeatmap(gol, top.n = 3)
+p + labs(title = "A. plotFreqHeatmap with default options")
 ```
 
-### Controlling the data plotted
+### Plotting allele proportions
+
+When calling ```plotFreqHeatmap``` with a ```CrisprSet``` object the
+```type``` argument controls the information shown in text in the heatmap.
+Setting ```type = "counts"``` (the default) shows allele counts, setting
+```type = "proportions"``` shows allele proportions.  This also affects
+the default header values.  When ```type = "proportions"``` the header
+shows the column sums, i.e. the percentage of the total number
+of reads shown in the plot.
+
+```{r, fig.height = 2.5, fig.width = 5, fig.align='center', fig.cap = "plotFreqHeatmap showing allele proportions"}
+    
+plotFreqHeatmap(gol, top.n = 3, type = "proportions")
+```
+
+### Changing the header
+
+There are three standard options for the header when calling ```plotFreqHeatmap```
+with an object of class ```CrisprSet```:
+
+* ```header = "default"``` shows total read counts when ```type = "counts"```
+  or column sums when ```type = "proportions"```.  See the examples above.
+* ```header = "counts"``` shows total read counts.  If variants are excluded,
+the values in the header do necessarily equal the column totals.  For example,
+see plot "C. Modified plotFreqHeatmap" below.
+* ```header = "efficiency"``` shows the mutation efficiency, i.e. the percentage
+of reads that have an insertion or deletion variant.  The mutation efficiency is
+calculated using the default options of the function ```mutationEfficiency```.  
+
+### Heatmap colours
 
 The tiles may be coloured by either the percentage of the column totals
-(default), or by the counts, by setting ```as.percent = FALSE```.  The
-column headers show the total number of sequences in the data.  Typically,
-rare variants are excluded, so the displayed variants do not add up to the
-column totals.
-
-```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
-plotFreqHeatmap(gol, top.n = 3, as.percent = FALSE)
-```
-
-When calling ```plotFreqHeatmap.CrisprSet```, the data can be
-displayed as percentages instead of raw counts by setting
-```type = "proportions"``` instead of the default ```type = "counts"```.
-
-```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
-plotFreqHeatmap(gol, top.n = 3, type = "proportions")
-
-```
+(default), or by the counts, by setting ```as.percent = FALSE```.  For
+example, see plot "B. coloured X labels with tiles coloured by count"
+below and contrast with plot "A. plotFreqHeatmap with default options"
+above.
 
 ### Changing colours of x-labels
 
@@ -714,11 +959,12 @@ a grouping vector must be supplied by setting parameter ```group```.
 Columns are ordered according to the levels of the group.  There
 should be one group value per column in the data.
 
-```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
+```{r, fig.height = 2.5, fig.width = 4, fig.align='center', fig.cap = "plotFreqHeatmap with X-axis labels coloured by experimental group and tiles coloured by count instead of proportion"}
 ncolumns <- ncol(variantCounts(gol))
 ncolumns
 grp <- rep(c(1,2), each = ncolumns/2)
-plotFreqHeatmap(gol, top.n = 3, group = grp)
+p <- plotFreqHeatmap(gol, top.n = 3, group = grp, as.percent = FALSE)
+p + labs(title = "B. coloured X labels with tiles coloured by count")
 ```
 
 The default colours are designed to be readable on a white background
@@ -726,30 +972,47 @@ and colour-blind safe.  These can be changed by supplying a vector of
 colours for each level of the group.  Colours must be supplied if there
 are more than 7 experimental groups.
 
-```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
+```{r, fig.height = 2.5, fig.width = 5, fig.align='center', fig.cap = "plotFreqHeatmap with labels showing allele proportions, header showing counts per sample and modified legend position."}
 grp_clrs <- c("red", "purple")
-plotFreqHeatmap(gol, top.n = 3, group = grp, group.colours = grp_clrs)
+p <- plotFreqHeatmap(gol, top.n = 3, group = grp, group.colours = grp_clrs,
+                type = "proportions", header = "counts",
+                legend.position = "bottom")
+p <- p + labs(title = "C. Modified plotFreqHeatmap")
+p
 ```
 
 
 ### Controlling the appearance of the legend
 
-The legend position is controlled via ```legend.position```, which
-is passed to ```ggplot2::theme```.  Similarly ```legend.key.height```
-controls the height of the legend. See the 
+The legend position is controlled via the ```plotFreqHeatmap```
+argument ```legend.position```, which is passed to ```ggplot2::theme```.
+Similarly ```legend.key.height``` controls the height of the legend. See the 
 [ggplot docs](http://docs.ggplot2.org/current/theme.html) for 
 more information.  
-
-```{r, fig.height = 3, fig.width = 4, fig.align='center'}
-plotFreqHeatmap(gol, top.n = 3, legend.position = "bottom")
-```
-
 
 ```{r, fig.height = 2.5, fig.width = 4, fig.align='center'}
 plotFreqHeatmap(gol, top.n = 3, 
                 legend.key.height = ggplot2::unit(1.5, "lines"))
-
 ```
+
+An additional example where the legend is placed at the bottom is shown
+above in plot C named "Modified plotFreqHeatmap" above.
+
+### Further customisation
+
+The function ```variantCounts``` returns a matrix of allele counts or proportions
+which can be passed to ```plotFreqHeatmap```.  ```variantCounts``` allows filtering
+by number of alleles or allele frequency.  When passing ```plotFreqHeatmap``` a
+```matrix``` instead of a ```CrisprSet```, a header vector can also be supplied.
+If no header is supplied, the header is the column sums.
+
+```{r, eval = FALSE}
+var_counts <- variantCounts(gol, top.n = 3)
+# (additional modifications to var_counts can be added here)
+plotFreqHeatmap(var_counts)
+```
+
+
 
 ## barplotAlleleFreqs
 
@@ -851,7 +1114,7 @@ CrisprSet object.  However, with some data formatting, it is also possible to
 use these functions with standard R objects. 
 
 An example adapting ```CrispRVariants::plotVariants``` to display pairwise
-alignment can be found in the code accompanying the CrispRVariants paper:
+alignments can be found in the code accompanying the CrispRVariants paper:
 https://github.com/markrobinsonuzh/CrispRvariants_manuscript
 
 ## Plot the reference sequence
@@ -876,3 +1139,60 @@ plotAlignments(ref, alns = NULL, target.loc = 22, ins.sites = data.frame())
 
 ```
 
+# Note about handling of large deletions
+
+`BWA` reports deletions above a threshold length as "chimeric" reads, with separate entries
+in the bam file for each mapped segment. By default, `CrispRVariants` only counts chimeric 
+reads where one mapped endpoint is near the cut site.  This setting was chosen as we
+observed long chimeric deletions in both on- and off-target CRISPR amplicon sequencing 
+experiments in several independent data sets.  The mapped endpoints were more likely to 
+be in the vicinity of the cut site in on-target experiments.  The off-target experiments
+did not have the other mutant alleles we expect to see if the long deletions are genuine CRISPR-induced variants.  Some of the chimeric reads we observed appeared to be primer dimers.
+See the supplementary material of the CrispRVariants paper for more details:
+
+```
+Lindsay H, Burger A, Biyong B, Felker A, Hess C, Zaugg J, Chiavacci E, Anders C, Jinek M, 
+Mosimann C and Robinson MD (2016). “CrispRVariants charts the mutation spectrum of genome
+engineering experiments.” Nature Biotechnology, 34, pp. 701–702. doi: 10.1038/nbt.3628.
+```
+
+The default chimera setting prioritises avoiding false positives such as primer dimers at
+the expense of potentially missing some genuine variants. This can be changed during
+initialisation by setting the `chimera.to.target` parameter to a large value.   
+
+```{r, message = FALSE, warning = FALSE}
+library(Biostrings)
+library(CrispRVariants)
+library(rtracklayer)
+```
+
+
+```{r, warning = FALSE}
+# This is a small, manually generated data set with a variety of different mutations 
+bam_fname <- system.file("extdata", "cntnap2b_test_data_s.bam", 
+                         package = "CrispRVariants")
+guide_fname <- system.file("extdata", "cntnap2b_test_data_guide.bed",
+                           package = "CrispRVariants")
+guide <- rtracklayer::import(guide_fname)
+guide <- guide + 5
+reference <- Biostrings::DNAString("TAGGCGAATGAAGTCGGGGTTGCCCAGGTTCTC")
+
+cset <- readsToTarget(bam_fname, guide, reference = reference, verbose = FALSE, 
+                      name = "Default")
+cset2 <- readsToTarget(bam_fname, guide, reference = reference, verbose = FALSE, 
+                       chimera.to.target = 100, name = "Including long dels")
+
+default_var_counts <- variantCounts(cset)
+print(default_var_counts)
+print(c("Total number of reads: ", colSums(default_var_counts)))
+
+# With chimera.to.target = 100, an additional read representing a large deletion is 
+# reported in the "Other" category.
+var_counts_inc_long_dels <- variantCounts(cset2)
+print(var_counts_inc_long_dels)
+print(c("Total number of reads: ", colSums(var_counts_inc_long_dels)))
+
+# This alignment can be viewed using `plotChimeras` 
+ch <- getChimeras(cset2, sample = 1)
+plotChimeras(ch, annotations = cset2$target)
+```

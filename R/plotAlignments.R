@@ -158,8 +158,8 @@ setMethod("plotAlignments", signature("character"),
   # If pam_loc is given, highlight the pam in the reference
   #  - 0.5 for tile boundaries not centres
   if (isTRUE(highlight.pam)){
-    if (! is.na(pam.start)){
-      if (is.na(pam.end)){
+    if (! anyNA(pam.start)){
+      if (anyNA(pam.end)){
         pam.end <- pam.start + 2
       }
     } else {
@@ -298,7 +298,7 @@ setMethod("plotAlignments", signature("DNAString"),
            highlight.guide = highlight.guide, guide.loc = guide.loc,
            tile.height = tile.height, max.insertion.size = max.insertion.size,
            min.insertion.freq = min.insertion.freq, line.weight = line.weight,
-           legend.symbol.size = ins.size, add.other = add.other,
+           legend.symbol.size = legend.symbol.size, add.other = add.other,
            codon.frame = codon.frame, ...)
 
 })

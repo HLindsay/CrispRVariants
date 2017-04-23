@@ -852,7 +852,7 @@ Input parameters:
   create.plot       Data is plotted if TRUE and returned without if FALSE.
                     (Default: TRUE)
   plot.regions      Subregion of the target to plot (Default: NULL)
-  allow.partial	    Should partial alignments be allowed?  (Default: TRUE)
+  allow.partial     Should partial alignments be allowed?  (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:
