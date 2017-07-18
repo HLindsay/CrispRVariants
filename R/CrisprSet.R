@@ -825,7 +825,7 @@ Input parameters:
     order:        Reorder the columns according to this order (Default: NULL)
     alleles:      Names of alleles to include.  Selection of alleles takes
                   place after filtering (Default: NULL).
-    ...:
+    ...:          Extra filtering or plotting options
 
 Return value:
     A ggplot2 plot object.  Call "print(obj)" to display
@@ -834,12 +834,12 @@ See also:
     CrispRVariants::plotFreqHeatmap
     '
 
-    # To do:
-    # Explicit option to exclude non-variant sequences?
-    # Colour according to total data, not filtered data?
-    
-    cig_freqs <- .self$.getFilteredCigarTable(top.n, min.count, min.freq,
-                                              type = type)
+    filter_fun <- .self$.getFilteredCigarTable
+    filter.args <- suppressWarnings(dispatchDots(filter_fun,
+                        top.n, min.count, min.freq, type = type, ...))
+    cig_freqs <- do.call(filter_fun, filter.args)
+
+    # Alleles determines row order and alleles included
     if (! is.null(alleles)){
       row_ord <- match(alleles, rownames(cig_freqs))
       if (any(is.na(row_ord))){
@@ -869,11 +869,13 @@ See also:
       col_sums <- colSums(.self$.getFilteredCigarTable())
     }
 
+    # Order the columns
     if (! is.null(order)){
       cig_freqs <- cig_freqs[,order]
       header <- header[order]
       col_sums <- col_sums[order]
     }
+
     p <- plotFreqHeatmap(cig_freqs, header = header, header.name = header_name,
                          col.sums = col_sums, as.percent = as.percent,
                          x.size = x.size, y.size = y.size,
@@ -919,8 +921,14 @@ Return value:
   A ggplot2 plot object.  Call "print(obj)" to display
 '
 
-    cig_freqs <- .self$.getFilteredCigarTable(top.n, min.count, min.freq)
+    # Filter by frequency, count etc
+    filter_fun <- .self$.getFilteredCigarTable  
+    filter.args <- suppressWarnings(dispatchDots(filter_fun,
+                                top.n = top.n, min.count = min.count,
+                                min.freq = min.freq, ...))
+    cig_freqs <- do.call(filter_fun, filter.args)
     
+    # Filter by name specify a row order
     if (! is.null(alleles)){
       row_ord <- match(alleles, rownames(cig_freqs))
       if (any(is.na(row_ord))){
@@ -930,13 +938,15 @@ Return value:
       cig_freqs <- cig_freqs[na.omit(row_ord),, drop = FALSE]
     }
     
-    # If there are no chimeric alignments, drop "Other"
+    # Remove "Other" alignments (if there are any) before making alignment
+    # strings
     if ("Other" %in% rownames(cig_freqs)){
       cig_freqs <- cig_freqs[rownames(cig_freqs) != "Other",, drop = FALSE]
     } else {
       add.other <- FALSE
     }
 
+    # Make the alignment strings to be displayed in the plot
     alns <- .self$makePairwiseAlns(cig_freqs, allow_partial = allow.partial)
     dots <- list(...)
 
@@ -945,6 +955,7 @@ Return value:
         
     ins.sites <- .self$insertion_sites
 
+    # If necessary, reverse complement the inserted sequences
     if (isTRUE(.self$pars$rc)){
       temp <- seq_along(1:width(.self$target))
       starts <- rev(temp) +1 # +1 because considering the leftmost point
@@ -953,7 +964,7 @@ Return value:
       ins.sites$seq <- as.character(reverseComplement(DNAStringSet(ins.sites$seq)))
     }
     
-
+    # Get coordinates with respect to target instead of genome
     if (isTRUE(renumbered)){
       genomic_coords <- c(start(.self$target):end(.self$target))
       target_coords <- .self$genome_to_target[as.character(genomic_coords)]
@@ -994,8 +1005,6 @@ Return value:
     p <- do.call(plotAlignments, args)
     return(p)
   },
-
-
 
   .truncatePlot = function(plot_args){
       stop("plot truncation for crispr_set not implemented yet")

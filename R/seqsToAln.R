@@ -60,6 +60,7 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
 #'@param xbreaks Mapping between coordinates and plot locations.
 #'  If supplied, plot locations are adjusted for gaos (Default: NULL)
 #'@param xticks Locations for x ticks in plot (Default: NULL)
+#'@return A list of the truncated alignments (alns) and reference (ref)
 seqsToPartialAln <- function(cigars, starts, alns, reference, target,
                           keep, xbreaks = NULL, xticks = NULL){
 

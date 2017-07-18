@@ -237,7 +237,3 @@ dispatchDots <- function(func, ..., call = FALSE){
     if (isTRUE(call)) return(do.call(func, result))
     result
 }
-
-
-
-

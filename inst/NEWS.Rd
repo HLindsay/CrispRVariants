@@ -1,6 +1,14 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.5.3}{
+  \itemize{
+    \item \code{plotAlignments} now accepts the same filtering arguments
+    as \code{variantCounts}
+  }
+}
+
+
 \section{Changes in version 1.5.1}{
   \itemize{
     \item New argument \code{alleles} in \code{plotAlignments} and
