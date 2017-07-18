@@ -1,6 +1,14 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.5.1}{
+  \itemize{
+    \item Fix to header of plotFreqHeatmap when using type = "propotions"
+    and providing sample order
+  }
+}
+
+
 \section{Changes in version 1.3.7}{
   \itemize{
     \item Updates to vignette

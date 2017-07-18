@@ -807,6 +807,7 @@ See also:
       if (header_type == "default") header <- round(colSums(cig_freqs), 2)
       cig_freqs <- round(cig_freqs, 2)
       col_sums <- rep(100, ncol(cig_freqs))
+      names(col_sums) <- colnames(cig_freqs)
     } else if (type == "counts"){
       col_sums <- colSums(.self$.getFilteredCigarTable())
     }
