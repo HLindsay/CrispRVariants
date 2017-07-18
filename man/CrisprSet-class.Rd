@@ -49,6 +49,10 @@ should SNVs be shown?  (default: 8)}
 \item{downstream.snv}{If split.snv = TRUE, how many bases downstream of the target.loc
 should SNVs be shown? (default: 6)}
 
+\item{bpparam}{A BiocParallel parameter object specifying how many cores to use.
+The parallelisable step is calling SNVs. Parallelisation is by sample.
+(default: SerialParam, i.e. no parallelization)}
+
 \item{verbose}{If true, prints information about initialisation progress (default: TRUE)}
 }
 \description{
@@ -115,7 +119,7 @@ Input parameters:
 Return value:
   A named vector classifying variant alleles as insertions, deletions, etc}
 
-\item{\code{consensusAlleles(cig_freqs = .self$cigar_freqs, return_nms = FALSE)}}{Description:
+\item{\code{consensusAlleles(cig_freqs = .self$cigar_freqs, return_nms = TRUE)}}{Description:
 Get variants by their cigar string, make the pairwise alignments for the consensus
 sequence for each variant allele
 
@@ -163,7 +167,8 @@ Input parameters:
 \item{\code{heatmapCigarFreqs(as.percent = TRUE, x.size = 8, y.size = 8,
   x.axis.title = NULL, x.angle = 90, min.freq = 0, min.count = 0,
   top.n = nrow(.self$cigar_freqs), type = c("counts", "proportions"),
-  header = c("default", "counts", "efficiency"), order = NULL, ...)}}{Description:
+  header = c("default", "counts", "efficiency"), order = NULL,
+  alleles = NULL, ...)}}{Description:
     Internal method for CrispRVariants:plotFreqHeatmap, optionally filters the table
     of variants, then a table of variant counts, coloured by counts or proportions.
 
@@ -186,6 +191,8 @@ Input parameters:
                   types.  "efficiency" shows the mutation efficiency
                   (calculated with default settings)
     order:        Reorder the columns according to this order (Default: NULL)
+    alleles:      Names of alleles to include.  Selection of alleles takes
+                  place after filtering (Default: NULL).
     ...:
 
 Return value:
@@ -240,8 +247,8 @@ Return value:
   matrix if a group is supplied.}
 
 \item{\code{plotVariants(min.freq = 0, min.count = 0, top.n = nrow(.self$cigar_freqs),
-  renumbered = .self$pars["renumbered"], add.other = add.other,
-  create.plot = TRUE, allow.partial = TRUE, ...)}}{Description:
+  alleles = NULL, renumbered = .self$pars["renumbered"], add.other = TRUE,
+  create.plot = TRUE, plot.regions = NULL, allow.partial = TRUE, ...)}}{Description:
   Internal method for CrispRVariants:plotAlignments, optionally filters the table
   of variants, then plots variants with respect to the reference sequence,
   collapsing insertions and displaying insertion sequences below the plot.
@@ -255,6 +262,8 @@ Input parameters:
                     (default: plot all)
                     Note that if there are ties in variant ranks,
                     top.n only includes ties with all members ranking <= top.n
+  alleles:          Alleles to include after filtering.  Default NULL means use all
+                    alleles that pass filtering.
   renumbered:       If TRUE, the x-axis is numbered with respect to the target
                     (cut) site.  If FALSE, x-axis shows genomic locations.
                     (default: TRUE)
@@ -262,7 +271,8 @@ Input parameters:
                     if there are any (Default: TRUE)
   create.plot       Data is plotted if TRUE and returned without if FALSE.
                     (Default: TRUE)
-  allow.partial        Should partial alignments be allowed?  (Default: TRUE)
+  plot.regions      Subregion of the target to plot (Default: NULL)
+  allow.partial     Should partial alignments be allowed?  (Default: TRUE)
   ...               additional arguments for plotAlignments
 
 Return value:

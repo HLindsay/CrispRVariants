@@ -5,7 +5,7 @@
 \title{mergeChimeras}
 \usage{
 mergeChimeras(bam, chimera_idxs = NULL, verbose = TRUE,
-  max_read_overlap = 10, max_unmapped = 10, name = NULL)
+  max_read_overlap = 10, max_unmapped = 4, name = NULL)
 }
 \arguments{
 \item{bam}{A GenomicAlignments::GAlignments object}
@@ -19,7 +19,7 @@ alignments be printed?  (Default: TRUE)}
 that are aligned to two genomic locations (Default: 10)}
 
 \item{max_unmapped}{Maximum number of bases in a mergeable read
-that are unmapped and located between two mapped segments}
+that are unmapped and located between two mapped segments (Default: 4)}
 
 \item{name}{Name of the sample, used when reporting verbose output.}
 }

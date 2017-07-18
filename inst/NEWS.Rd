@@ -3,8 +3,17 @@
 
 \section{Changes in version 1.5.1}{
   \itemize{
-    \item Fix to header of plotFreqHeatmap when using type = "propotions"
+    \item New argument \code{alleles} in \code{plotAlignments} and
+    \code{plotFreqHeatmap} for selecting which alleles to display or specifiying
+    a plotting order
+    \item Removed unnecessary fields from CrisprRun class
+    \item New accessor function \code{alns} to get alignments from a
+     \code{CrisprSet}
+    \item Improvements to plotAlignments to avoid unnecessary symbols in legend 
+    \item Fix to header of plotFreqHeatmap when using type = "proportions"
     and providing sample order
+    \item \code{consensusSeqs} now returns cigars as metadata by default
+    \item Started indenting with four spaces at the start
   }
 }
 

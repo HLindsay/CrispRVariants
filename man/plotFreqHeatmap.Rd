@@ -17,7 +17,8 @@ plotFreqHeatmap(obj, ...)
   x.labels = NULL, legend.key.height = grid::unit(1, "lines"))
 
 \S4method{plotFreqHeatmap}{CrisprSet}(obj, ..., top.n = 50, min.freq = 0,
-  min.count = 1, type = c("counts", "proportions"), order = NULL)
+  min.count = 1, type = c("counts", "proportions"), order = NULL,
+  alleles = NULL)
 }
 \arguments{
 \item{obj}{A matrix of counts with rows = feature, columns = sample}
@@ -71,7 +72,7 @@ doesn't do anything at the moment)}
 variants have equal rank, they will not be shown.   (Default: 50)}
 
 \item{min.freq}{i (%) only plot variants with frequency >= i% in at least
-one sample (default: 0, i.e no frequency cutoff)}
+one sample (Default: 0, i.e no frequency cutoff)}
 
 \item{min.count}{i (integer) only plot variants with count >= i in at least
 one sample (default: 0, i.e no count cutoff)}
@@ -80,6 +81,11 @@ one sample (default: 0, i.e no count cutoff)}
 
 \item{order}{A list of column names or indices specifying the order of the
 columns in the plot}
+
+\item{alleles}{A list of alleles to include.  Can be used to display
+only alleles of interest or to order the alleles.
+The default value NULL means all alleles passing the frequency cut offs 
+will be included.}
 }
 \value{
 The ggplot2 plot of the variant frequencies

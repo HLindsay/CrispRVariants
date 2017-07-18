@@ -47,64 +47,67 @@ setMethod("plotVariants", signature("CrisprSet"),
                    plotAlignments.args = list(),
                    plotFreqHeatmap.args = list()){
 
-  include_txs <- TRUE
-  if(!(class(txdb) == "TxDb" | class(txdb) == "TranscriptDb") ){
-    if (is.null(txdb)){
-      include_txs <- FALSE
-    } else{
-      stop("txdb should be a (GenomicFeatures) transcript database object")
+    include_txs <- TRUE
+    if(!(class(txdb) == "TxDb" | class(txdb) == "TranscriptDb") ){
+      if (is.null(txdb)){
+        include_txs <- FALSE
+      } else{
+        stop("txdb should be a (GenomicFeatures) transcript database object")
+      }
     }
-  }
   
-  dots <- list(...)
-  annotate_nms <- c("target.colour", "target.size", "gene.text.size", "panel.spacing")
+    dots <- list(...)
+    annotate_nms <- c("target.colour", "target.size",
+                      "gene.text.size", "panel.spacing")
 
-  annotate_args <- dots[names(dots) %in% annotate_nms]
-  dots[annotate_nms] <- NULL
+    annotate_args <- dots[names(dots) %in% annotate_nms]
+    dots[annotate_nms] <- NULL
 
-  arrange_nms <-  c("fig.height","col.wdth.ratio", "row.ht.ratio", "left.plot.margin")
-  arrange_args <- dots[names(dots) %in% arrange_nms]
+    arrange_nms <-  c("fig.height","col.wdth.ratio",
+                      "row.ht.ratio", "left.plot.margin")
+    arrange_args <- dots[names(dots) %in% arrange_nms]
 
-  target <- obj$target
-  if (isTRUE(add.chr) & isTRUE(include_txs)){
-    # If adding "chr" to target chromosomes matches txdb chromosomes, do so
-    target_levels <- GenomeInfoDb::seqlevels(target)
-    txdb_levels <- GenomeInfoDb::seqlevels(txdb)
-    wchr <- paste0("chr", target_levels)
-    idxs <- wchr %in% txdb_levels
-    target_levels[idxs] <- wchr[idxs]
-    target <- GenomeInfoDb::renameSeqlevels(target, target_levels)
-  }
-
-  if (isTRUE(include_txs)){
-    annotate_args <- modifyList(list(txdb = txdb, target = target), annotate_args)
-    gene_p <- do.call(annotateGenePlot, annotate_args)
-    gene_p <- ggplot2::ggplotGrob(gene_p)
-  } else {
-    arrange_args[["row.ht.ratio"]] <- c(0,1)
-    gene_p <- grid::grid.rect(gp=grid::gpar(col="white"), draw = FALSE)
-    no_ins <- nrow(obj$insertion_sites) == 0
-    if (no_ins & ! "left.plot.margin" %in% names(arrange_args)){
-      # Sample names tend to clip if there are no insertions, so increase default
-      arrange_args[["left.plot.margin"]] <- grid::unit(c(0.2,0,3,0.5), "lines")
+    target <- obj$target
+    if (isTRUE(add.chr) & isTRUE(include_txs)){
+      # If adding "chr" to target chromosomes matches txdb chromosomes, do so
+      target_levels <- GenomeInfoDb::seqlevels(target)
+      txdb_levels <- GenomeInfoDb::seqlevels(txdb)
+      wchr <- paste0("chr", target_levels)
+      idxs <- wchr %in% txdb_levels
+      target_levels[idxs] <- wchr[idxs]
+      target <- GenomeInfoDb::renameSeqlevels(target, target_levels)
     }
-  }
 
-  plotAlignments.args[["obj"]] <-  obj
-  aln_p <- do.call(plotAlignments, plotAlignments.args)
-  aln_p <- aln_p + theme(legend.spacing = grid::unit(0.2,"cm"))
+    if (isTRUE(include_txs)){
+      annotate_args <- modifyList(list(txdb = txdb, target = target),
+                                  annotate_args)
+      gene_p <- do.call(annotateGenePlot, annotate_args)
+      gene_p <- ggplot2::ggplotGrob(gene_p)
+    } else {
+      arrange_args[["row.ht.ratio"]] <- c(0,1)
+      gene_p <- grid::grid.rect(gp=grid::gpar(col="white"), draw = FALSE)
+      no_ins <- nrow(obj$insertion_sites) == 0
+      if (no_ins & ! "left.plot.margin" %in% names(arrange_args)){
+        # Names tend to clip if there are no insertions, increase default
+        arrange_args[["left.plot.margin"]] <- grid::unit(c(0.2,0,3,0.5), "lines")
+      }
+    }
+
+    plotAlignments.args[["obj"]] <-  obj
+    aln_p <- do.call(plotAlignments, plotAlignments.args)
+    aln_p <- aln_p + theme(legend.spacing = grid::unit(0.2,"cm"))
   
-  plotFreqHeatmap.args[["obj"]] <- obj
-  heat_p <- do.call(plotFreqHeatmap, plotFreqHeatmap.args)
-  heat_p <- heat_p + theme(plot.background=element_rect(fill = "transparent",
+    plotFreqHeatmap.args[["obj"]] <- obj
+    heat_p <- do.call(plotFreqHeatmap, plotFreqHeatmap.args)
+    heat_p <- heat_p + theme(plot.background=element_rect(fill = "transparent",
                                                         colour = NA),
                            plot.margin = grid::unit(c(1, 0.25, 0.5, 0), "lines"))
 
-  arrange_args = modifyList(list("top.plot" = gene_p, "left.plot" = aln_p,
-                                 "right.plot" = heat_p), arrange_args)
-  result <- do.call(arrangePlots, arrange_args)
+    arrange_args = modifyList(list("top.plot" = gene_p, "left.plot" = aln_p,
+                                   "right.plot" = heat_p), arrange_args)
+    result <- do.call(arrangePlots, arrange_args)
 
-  return(result)
+    return(result)
 })
 
 #'@title Arrange plots for plotVariants:CrisprSet
@@ -188,15 +191,19 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
                      strand = genes$TXSTRAND, txid = genes$TXID)
  
     # Assumption: if no end then also no start
-    no_cds <- is.na(genes$CDSSTART)
-    strts <- genes$CDSSTART
-    ends <- genes$CDSEND
-    strts[no_cds] <- genes$EXONSTART[no_cds]
-    ends[no_cds] <- genes$EXONEND[no_cds]
+    #no_cds <- is.na(genes$CDSSTART)
+    #strts <- genes$CDSSTART
+    #ends <- genes$CDSEND
+    #strts[no_cds] <- genes$EXONSTART[no_cds]
+    #ends[no_cds] <- genes$EXONEND[no_cds]
  
+    has_cds <- ! is.na(genes$CDSSTART)
     cds_gr <- GRanges(seqnames(target)[1], 
-                     IRanges(strts, ends),
-                     strand = genes$TXSTRAND, txid = genes$TXID)
+                      IRanges(genes$CDSSTART[has_cds], genes$CDSEND[has_cds]),
+                      strand = genes$TXSTRAND[has_cds], txid = genes$TXID[has_cds])
+    #cds_gr <- GRanges(seqnames(target)[1], 
+    #                 IRanges(strts, ends),
+    #                 strand = genes$TXSTRAND, txid = genes$TXID)
  
     txid <- as.character(unique(genes$TXID))
     all_rngs <- c(cds_gr, gene_gr)

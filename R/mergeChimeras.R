@@ -13,13 +13,13 @@
 #'@param max_read_overlap  Maximum number of bases in a mergeable read
 #'that are aligned to two genomic locations (Default: 10)
 #'@param max_unmapped  Maximum number of bases in a mergeable read
-#' that are unmapped and located between two mapped segments
+#' that are unmapped and located between two mapped segments (Default: 4)
 #'@param name Name of the sample, used when reporting verbose output.
 #'@author Helen Lindsay
 #'@return A list of the merged and unmerged chimeric alignments
 #'@rdname mergeChimeras
 mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
-                        max_read_overlap = 10, max_unmapped = 10, name = NULL){
+                        max_read_overlap = 10, max_unmapped = 4, name = NULL){
     
     # max_unmapped refers to unmapped sections between chimeric segments
     
@@ -81,7 +81,7 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     gaps <- c(1,  first_aligned[-1] - last_aligned[-length(last_aligned)])
     gaps[change_pts] <- 1
     read_mapped_uniq <- gaps > -1 * max_read_overlap # 
-    read_covered <- gaps < max_unmapped
+    read_covered <- gaps <= max_unmapped
        
     gap_codes <- rle(paste(read_mapped_uniq & read_covered, nms_codes, sep = "."))
     has_read_gap <- rep(gap_codes$lengths, gap_codes$lengths) ==
@@ -95,6 +95,9 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     rearr <- rearr < 0
 
     mergeable <- one_chr & same_strd & has_genome_gap & has_read_gap & !rearr
+    if (!any(mergeable)){                          
+      return(list(merged = GenomicAlignments::GAlignments(), unmerged = bam))
+    }
     
     if (isTRUE(verbose)){ 
       format_zero <- function(x) ifelse(is.nan(x), 0, x)
@@ -183,9 +186,13 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     sqs <- unname(sqs[names(chimeras)])
     keep_chs <- mergeable[!duplicated(nms_codes)]
    
+    # WARNING: if there is an unmapped section of the read < max_unmapped,
+    # it is deleted 
     if (any(read_gaps > 0 )){
       keep_chs <- mergeable[!duplicated(nms_codes)]
-      qrng <- relist(unlist(qrng), IRanges::PartitioningByWidth(nms$lengths))
+      ch_qr <- sum(relist(elementNROWS(qrng), PartitioningByWidth(nms$lengths)))
+      qrng <- relist(unlist(qrng), PartitioningByWidth(ch_qr))
+      #qrng <- relist(unlist(qrng), IRanges::PartitioningByWidth(nms$lengths))
       gps <- Biostrings::gaps(qrng)[keep_chs]
       sqs <- Biostrings::replaceAt(sqs, gps, "")
     }

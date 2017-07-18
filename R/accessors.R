@@ -174,7 +174,30 @@ setMethod("consensusSeqs", signature("CrisprSet"),
                                                     include.chimeras = FALSE,
                                                     include.nonindel = TRUE,
                                                     type = "counts")
+
             obj$consensusAlleles(cig_freqs)
+
 })
 
 
+#'@title Get alignments
+#'@description Return alignments from an object that contains them.
+#'For a CrisprSet object, these are truncated, non-chimeric alignments 
+#'@param obj An object containing aligned sequences
+#'@param ... additional arguments
+#'@author Helen Lindsay
+#'@rdname alns
+#'@export
+setGeneric("alns", function(obj, ...) {
+  standardGeneric("alns")})
+
+#'@rdname alns
+#'@return A GAlignmentsList of consensus sequences on the positive strand.
+#'@examples
+#'data("gol_clutch1")
+#'alns <- alns(gol)
+setMethod("alns", signature("CrisprSet"),
+          function(obj, ...){
+            alns <- lapply(obj$crispr_runs, function(x) x$alns)
+            GAlignmentsList(alns)
+          })

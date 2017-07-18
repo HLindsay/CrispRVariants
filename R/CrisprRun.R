@@ -50,16 +50,13 @@ CrisprRun = setRefClass(
   Class = "CrisprRun",
   fields = c(alns = "GAlignments",
              name = "character",
-             cigar_ops = "CompressedCharacterList",
-             insertions = "data.frame",
-             ins_key = "integer",
              cigar_labels = "character",
              chimeras = "GAlignments",
              chimera_combs = "data.frame")
 )
 
 CrisprRun$methods(
-  initialize = function(bam, target, genome.ranges, rc = FALSE, name = NULL,
+  initialize = function(bam, target, rc = FALSE, name = NULL,
                         chimeras = GenomicAlignments::GAlignments(), verbose = TRUE){
     
     # If no name is provided, use the coordinates
@@ -75,12 +72,8 @@ CrisprRun$methods(
 
     if (length(bam) == 0) { return() }
 
-    ref_ranges <- cigarRangesAlongReferenceSpace(cigar(bam))
-    cigar_ops <<- CharacterList(explodeCigarOps(cigar(bam)))
-
-    # recalculate this in case of keep_unpaired = FALSE, not tested
-    genome.ranges <- cigarRangesAlongReferenceSpace(cigar(bam), pos = start(bam))
-    .self$getInsertionSeqs(ref_ranges = ref_ranges, genome_ranges = genome.ranges)
+    # recalculate genome.ranges in case of keep_unpaired = FALSE, not tested
+    .self$getInsertionSeqs(target = target)
   },
 
   show = function(){
@@ -88,80 +81,78 @@ CrisprRun$methods(
                                   .self$name, length(.self$alns)), .self$alns))
   },
 
-  removeSeqs = function(idxs){
-'
-Description:
-  Remove sequences from a CrisprRun object and from the internal CrisprRun
-  fields that store insertion locations for plotting.
+#  removeSeqs = function(idxs){
+#'
+#Description:
+#  Remove sequences from a CrisprRun object and from the internal CrisprRun
+#  fields that store insertion locations for plotting.
+#
+#Input parameters:
+#  idxs:     Indexes of reads to remove'
+#
+#    # note insertions table is not updated
+#    ins_key_idxs <- which(names(.self$ins_key) %in% idxs)
+#
+#    if (length(ins_key_idxs) > 0){
+#      .self$field("ins_key", .self$ins_key[-ins_key_idxs])
+#    }
+#
+#    # Insertion key refers to indexs with in the alignments, these have shifted after
+#    # filtering.  Note - would need to shift insertions idxs if insertions is also updated
+#    subtract <- rep(0, length(.self$alns))
+#    subtract[idxs] <- 1
+#    subtract <- cumsum(subtract)
+#
+#    temp <- .self$ins_key
+#    nm_as_num <- as.numeric(names(temp))
+#    names(temp) <- nm_as_num - subtract[nm_as_num]
+#    .self$field("ins_key", temp)
+#
+#    # Remove the extra sequences from the chimeras
+#    rm_by_nm <- names(alns)[idxs]
+#    ch_to_keep <- !(names(.self$chimeras) %in% rm_by_nm)
+#    .self$field("chimeras", .self$chimeras[ch_to_keep])
+#
+#    .self$field("alns", .self$alns[-idxs])
+#    .self$field("cigar_labels", .self$cigar_labels[-idxs])
+#  },
 
-Input parameters:
-  idxs:     Indexes of reads to remove'
-
-    # note insertions table is not updated
-    ins_key_idxs <- which(names(.self$ins_key) %in% idxs)
-
-    if (length(ins_key_idxs) > 0){
-      .self$field("ins_key", .self$ins_key[-ins_key_idxs])
-    }
-
-    # Insertion key refers to indexs with in the alignments, these have shifted after
-    # filtering.  Note - would need to shift insertions idxs if insertions is also updated
-    subtract <- rep(0, length(.self$alns))
-    subtract[idxs] <- 1
-    subtract <- cumsum(subtract)
-
-    temp <- .self$ins_key
-    nm_as_num <- as.numeric(names(temp))
-    names(temp) <- nm_as_num - subtract[nm_as_num]
-    .self$field("ins_key", temp)
-
-    # Remove the extra sequences from the chimeras
-    rm_by_nm <- names(alns)[idxs]
-    ch_to_keep <- !(names(.self$chimeras) %in% rm_by_nm)
-    .self$field("chimeras", .self$chimeras[ch_to_keep])
-
-    .self$field("alns", .self$alns[-idxs])
-    .self$field("cigar_labels", .self$cigar_labels[-idxs])
-    .self$field("cigar_ops", .self$cigar_ops[-idxs])
-  },
-
-  getInsertionSeqs = function(ref_ranges, genome_ranges){
+  getInsertionSeqs = function(target){
 ' 
 Description:
   Set the "insertions" field - a table of the locations of insertions,
   and the "ins_key" field which relates sequences indices to the insertions 
   they contain
 Input parameters:
-ref_ranges:     The cigar operations of the reads with respect to the reference
-genome_ranges:  The cigar operations of the reads with respect to the genome,
-                i.e. the reference locations shifted to their genomic start locations
 '
     # Note that the start of a ref_ranges insertion is its genomic end (rightmost base)
 
-    ins <- .self$cigar_ops == "I"
-    idxs <- rep(1:length(.self$cigar_ops), sum(ins))
+    genome_ranges <- cigarRangesAlongReferenceSpace(cigar(.self$alns),
+                                     pos = start(.self$alns), ops = "I")
+    ref_ranges <- cigarRangesAlongReferenceSpace(cigar(.self$alns), ops = "I")
+    idxs <- rep(seq_along(ref_ranges), lengths(ref_ranges))
     tseqs <- as.character(mcols(.self$alns)$seq)[idxs]
 
     if (length(tseqs) == 0) {
-      .self$field("insertions", data.frame())
-      .self$field("ins_key", integer())
-      return()
+      return(NULL)
     }
 
-    query_ranges <- cigarRangesAlongQuerySpace(cigar(.self$alns))
-    qranges <- unlist(query_ranges[ins])
+    query_ranges <- cigarRangesAlongQuerySpace(cigar(.self$alns), ops = "I")
+    qranges <- unlist(query_ranges)
+
     ins_seqs <- as.character(subseq(tseqs, start(qranges), end(qranges)))
-    ins_starts <- start(unlist(ref_ranges[ins]))
-    genomic_starts <- unlist(start(genome_ranges[ins])) -1 # -1 for leftmost base
-    df <- data.frame(start = ins_starts, seq = ins_seqs, genomic_start = genomic_starts)
+    ins_starts <- start(unlist(shift(genome_ranges, 1 - start(target))))
+    genomic_starts <- unlist(start(genome_ranges)) -1 # -1 for leftmost base
+    
+    df <- data.frame(start = ins_starts, seq = ins_seqs,
+            genomic_start = genomic_starts,
+            label = .self$cigar_labels[idxs], idxs)
     df$seq <- as.character(df$seq)
-    agg <- aggregate(rep(1, nrow(df)), by = as.list(df), FUN = table)
-    colnames(agg) <- c("start", "seq", "genomic_start", "count")
-    .self$field("insertions", agg)
-    # Store a key to match the sequences to their insertion
-    ikey <- match(interaction(df), interaction(insertions[,c(1:3)]))
-    names(ikey) <- idxs
-    .self$field("ins_key", ikey)
+    agg <- aggregate(df$idx, by = as.list(df[,c(1:4)]), c)
+    agg$count <- lengths(agg$x)
+    colnames(agg) <- c("start", "seq", "genomic_start",
+                       "cigar_label", "idxs", "count")
+    return(agg)
   },
 
   .checkNonempty = function(){
@@ -250,6 +241,17 @@ Input parameters:
     }
 
     .self$field("cigar_labels", renamed)
+    
+    #__________
+    # Check if partial alns starting from different places have same labels
+    strts <- start(.self$alns)[sum(keep) == 0 & ! spans]
+    temp <- split(strts, renamed[sum(keep) == 0 & ! spans])
+    if (! all(lengths(lapply(temp, unique)) == 1) ){
+       rn <- unlist(renamed[sum(keep) == 0 & ! spans]) 
+       gen_strt <- genome_to_target[as.character(unlist(temp))]
+        
+    }
+    
     renamed
   },
 
@@ -257,6 +259,7 @@ Input parameters:
                           mismatch_label = "SNV", cut_site = 17,
                           upstream = 8, downstream = 5){
 
+  # NOTE: SNVS not called in partial alignments
   # Only consider mismatches up to (upstream) to the left of the cut and
   # (downstream) to the right of the cut
   # The cut site is between cut_site and cut_site + 1

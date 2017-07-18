@@ -56,7 +56,7 @@ setMethod("plotAlignments", signature("CrisprSet"),
 #'of different variants and insertions to be displayed.
 #'@param alns A named character vector of aligned sequences, with insertions removed
 #'@param ins.sites A table of insertion_sites, which must include cols
-#'named "start", "cigar" and "seq", for the start of the insertion in the
+#'named "start", "cigar", "seq" and "count" for the start of the insertion in the
 #'corresponding sequence
 #'@param highlight.pam should location of PAM with respect to the target site be
 #'indicated by a box? (Default: TRUE)  If TRUE, and pam.start and pam.end are not
@@ -190,6 +190,7 @@ setMethod("plotAlignments", signature("character"),
                              seq = ins.sites[!is.na(ins_ord),"seq"],
                     count = as.integer(ins.sites[!is.na(ins_ord),"count"]))
 
+    # Aggregate identical insertions across samples
     ins_points <- aggregate(ins_points$count,
                             by = as.list(ins_points[,c(1:3)]), FUN = sum)
     colnames(ins_points) <- c("x","y","seq", "count")
@@ -232,6 +233,7 @@ setMethod("plotAlignments", signature("character"),
     })
     names(x) <- names(splits)
 
+    # Make all sequences same length for better legend placement
     new_seqs <- unlist(x)[unique(xy_locs)]
     max_seq_ln <- max(sapply(gsub("\n.*", "", new_seqs), nchar)) + 3
     new_seqs <- sprintf(paste0("%-",max_seq_ln,"s"), new_seqs)
@@ -240,13 +242,17 @@ setMethod("plotAlignments", signature("character"),
     ins_points$seq <- new_seqs
     
     # Specify colours and shapes for insertion symbols
-    ins_points$shapes <- as.factor(1:nrow(ins_points))
-    ins_points$colours <- as.factor(rep(clrs, 3)[1:nrow(ins_points)])
-    fill_clrs <- rep(clrs, 3)[1:nrow(ins_points)]
-    fill_shps <- rep(shps, 17)[1:nrow(ins_points)]
+    sq_f <- factor(ins_points$seq, levels = unique(ins_points$seq))
+    temp <- seq_len(nrow(ins_points))[sq_f]
+    ins_points$shapes <- as.factor(temp)
+    nins <- max(temp)
+    fill_clrs <- rep(clrs, length.out = nins)#[temp]
+    ins_points$colours <- as.factor(fill_clrs[temp])
+    fill_shps <- rep(shps, length.out = nins)
 
-    legend_nrow <- ceiling(nrow(ins_points)/ legend.cols)
-
+    #legend_nrow <- ceiling(nrow(ins_points)/ legend.cols)
+    legend_nrow <- ceiling(nins / legend.cols)
+    
     # Indicate insertions
     p <- p + geom_point(data = ins_points,
                         aes_(x = quote(x), y = quote(y),
@@ -336,15 +342,15 @@ transformAlnsToLong <- function(ref, alns, add.other = FALSE){
   # Reverse alignment order, as ggplot geom_tile plots bottom up
   aln_chrs <- strsplit(c(rev(alns), Reference = as.character(ref)), "")
 
+  # Test that all alignments and reference have the same length
+  if (! length(unique(lapply(aln_chrs, length))) == 1){
+    stop("The reference sequence and the alignments must all have the same length")
+  }
+  
   # Add a blank row which will get white tiles
   if (isTRUE(add.other)){
     aln_chrs <- c(list(rep("",length(aln_chrs[[1]]))), aln_chrs)
     names(aln_chrs)[[1]] <- "Other"
-  }
-
-  # Test that all alignments and reference have the same length
-  if (! length(unique(lapply(aln_chrs, length))) == 1){
-    stop("The reference sequence and the alignments must all have the same length")
   }
 
   temp <- t(as.data.frame(aln_chrs))

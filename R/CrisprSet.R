@@ -36,6 +36,9 @@
 #' should SNVs be shown?  (default: 8)
 #'@param downstream.snv If split.snv = TRUE, how many bases downstream of the target.loc
 #' should SNVs be shown? (default: 6)
+#'@param bpparam A BiocParallel parameter object specifying how many cores to use.
+#'The parallelisable step is calling SNVs. Parallelisation is by sample.
+#' (default: SerialParam, i.e. no parallelization)
 #'@param verbose If true, prints information about initialisation progress (default: TRUE)
 #'@field crispr_runs A list of CrisprRun objects, typically corresponding to samples
 #'of an experiment.
@@ -77,7 +80,7 @@ CrisprSet$methods(
                         names = NULL, renumbered = TRUE, target.loc = NA,
                         match.label = "no variant", mismatch.label = "SNV",
                         split.snv = TRUE, upstream.snv = 8, downstream.snv = 6,
-                        verbose = TRUE, ...){
+                        bpparam = BiocParallel::SerialParam(), verbose = TRUE, ...){
 
     # Setting up code to allow for a Cpf1 setting in future
     enzyme <- "Cas9"
@@ -120,7 +123,7 @@ CrisprSet$methods(
     
     nonempty_runs <- sapply(.self$crispr_runs, function(x) {
       ! ( length(x$alns) == 0 & length(x$chimeras) == 0 )
-      })
+    })
 
     .self$crispr_runs <<- .self$crispr_runs[nonempty_runs]
     if (length(.self$crispr_runs) == 0) stop("no on target reads in any sample")
@@ -144,7 +147,8 @@ CrisprSet$methods(
                                mismatch_label = mismatch.label, ref = ref,
                                short = short.cigars, split.snv = split.snv,
                                upstream.snv = upstream.snv,
-                               downstream.snv = downstream.snv)
+                               downstream.snv = downstream.snv,
+                               bpparam = bpparam)
                                
     if (isTRUE(verbose)) message("Counting variant combinations\n")
     .self$.countCigars(cig_by_run)
@@ -159,10 +163,33 @@ CrisprSet$methods(
     print(.self$.getFilteredCigarTable(top.n = 6))
   },
 
+  .checkSamplesAndAlleles = function(alleles, samples){
+    if (is.null(samples)) return()
+    stopifnot(identical(length(alleles), length(samples)))
+    if (is.character(samples) & ! 
+        all(samples %in% names(.self$crispr_runs))){
+      stop("Samples should be either sample names or numeric indices")
+    }
+    if (is.numeric(samples)){
+      nsamples <- length(.self$crispr_runs)
+      too_large <- samples > nsamples
+      if (any(too_large)){
+        stop(sprintf("Cannot select sample %s as there are only %s samples",
+                     which(too_large)[1], nsamples))
+      }
+    }
+    missing_alleles <- setdiff(unique(alleles), rownames(.self$cigar_freqs))
+    if (any(missing_alleles)){
+      warning(sprintf("Alleles not found: %s", 
+                      paste(missing_alleles, sep = ", ")))
+    }
+  },
+  
   .setCigarLabels = function(renumbered = TRUE, target.loc = NA, target_start = NA,
                              target_end = NA, rc = FALSE, match_label = "no variant",
                              mismatch_label = "SNV", short = TRUE, split.snv = TRUE,
-                             upstream.snv = 8, downstream.snv = 5, ref = NULL){
+                             upstream.snv = 8, downstream.snv = 5, ref = NULL,
+                             bpparam = BiocParallel::SerialParam()){
     g_to_t <- NULL
 
     if (isTRUE(renumbered)){
@@ -175,7 +202,6 @@ CrisprSet$methods(
       }
       
     cut.site <- ifelse(is.na(target.loc), 17, target.loc)
-
 
     # rc means "display on negative strand"
     # If the guide is being displayed on the opposite strand, upstream and
@@ -190,7 +216,7 @@ CrisprSet$methods(
     }
 
     # This section is slow
-    cig_by_run <- lapply(.self$crispr_runs,
+    cig_by_run <- BiocParallel::bplapply(.self$crispr_runs,
                              function(crun)  crun$getCigarLabels(
                               target.loc = cut.site, genome_to_target = g_to_t,
                               ref = .self$ref,
@@ -198,7 +224,7 @@ CrisprSet$methods(
                               match.label = .self$pars$match_label,
                               mismatch.label = .self$pars$mismatch_label,
                               rc = rc, upstream = upstream.snv,
-                              downstream = downstream.snv))
+                              downstream = downstream.snv), BPPARAM = bpparam)
 
     cig_by_run
   },
@@ -341,33 +367,52 @@ Input parameters:
 
     cig_by_run <- lapply(.self$crispr_runs, function(crun) crun$cigar_labels)
     all_cigars <- unlist(cig_by_run)
-    unique_cigars <- !duplicated(unlist(cig_by_run))
+    unique_cigars <- !duplicated(all_cigars) & 
+      ! all_cigars %in% c(.self$pars$match_label, .self$pars$mismatch_label)
 
-    co <- do.call(c, unlist(lapply(.self$crispr_runs, function(x) x$cigar_ops),
-                            use.names = FALSE))[unique_cigars]
-    idxs <- co != "M"
+    x <- alns(.self)
 
-    get_gr <- function(alns){
-      GenomicAlignments::cigarRangesAlongReferenceSpace(
-          GenomicAlignments::cigar(alns), pos = GenomicAlignments::start(alns))
-    }
-
-    ir <- do.call(c, unlist(lapply(.self$crispr_runs, function(x) get_gr(x$alns)),
-                            use.names = FALSE))
-
-    ir <- ir[unique_cigars][idxs]
-    names(ir) <- all_cigars[unique_cigars]
+    ir <- cigarRangesAlongReferenceSpace(unlist(cigar(x)),
+                pos = unlist(GenomicAlignments::start(x)),
+                ops = c("I","D"), with.ops = TRUE)
+    
+    ir <- ir[unique_cigars]
+    el <- elementNROWS(ir)
     ir <- unlist(ir)
 
-    if (add_to_ins){
-      ins_idxs <- unlist(co[idxs] == "I")
-      end(ir[ins_idxs]) <- end(ir[ins_idxs]) + 1
-    }
+    #co <- do.call(c, unlist(lapply(.self$crispr_runs, function(x){ 
+    #                        explodeCigarOps(cigar(x$alns))}),
+    #                        use.names = FALSE))[unique_cigars]
+    
+    #co <- do.call(c, unname(lapply(.self$crispr_runs, function(x){ 
+    #                        explodeCigarOps(cigar(x$alns))})))[unique_cigars]
 
-    chrom <- as.character(seqnames(.self$target))
-    if (add_chr & ! grepl('^chr', chrom)){
+    #idxs <- co != "M"
+
+    #get_gr <- function(alns){
+    #  GenomicAlignments::cigarRangesAlongReferenceSpace(
+    #      GenomicAlignments::cigar(alns), pos = GenomicAlignments::start(alns))
+    #}
+
+    #ir <- do.call(c, unlist(lapply(.self$crispr_runs, function(x) get_gr(x$alns)),
+    #                        use.names = FALSE))
+
+    #ir <- ir[unique_cigars][idxs]
+    #names(ir) <- all_cigars[unique_cigars]
+    #ir <- unlist(ir)
+
+    if (add_to_ins){
+      ins_idxs <- names(ir) == "I"
+      #ins_idxs <- unlist(co[idxs] == "I")
+      end(ir[ins_idxs]) <- end(ir[ins_idxs]) + 1
+   }
+
+   names(ir) <- rep(all_cigars[unique_cigars], el)
+
+   chrom <- as.character(seqnames(.self$target))
+   if (add_chr & ! grepl('^chr', chrom)){
       chrom <- paste0("chr", chrom)
-    }
+   }
 
     GenomicRanges::GRanges(chrom, ir)
   },
@@ -752,7 +797,7 @@ Result:
                                top.n = nrow(.self$cigar_freqs),
                                type = c("counts", "proportions"),
                                header = c("default", "counts", "efficiency"),
-                               order = NULL, ...){
+                               order = NULL, alleles = NULL, ...){
 
     '
 Description:
@@ -778,6 +823,8 @@ Input parameters:
                   types.  "efficiency" shows the mutation efficiency
                   (calculated with default settings)
     order:        Reorder the columns according to this order (Default: NULL)
+    alleles:      Names of alleles to include.  Selection of alleles takes
+                  place after filtering (Default: NULL).
     ...:
 
 Return value:
@@ -787,10 +834,21 @@ See also:
     CrispRVariants::plotFreqHeatmap
     '
 
-    # Doesn't currently allow option to exclude non-variant
-
+    # To do:
+    # Explicit option to exclude non-variant sequences?
+    # Colour according to total data, not filtered data?
+    
     cig_freqs <- .self$.getFilteredCigarTable(top.n, min.count, min.freq,
                                               type = type)
+    if (! is.null(alleles)){
+      row_ord <- match(alleles, rownames(cig_freqs))
+      if (any(is.na(row_ord))){
+        warning(sprintf("After filtering, alleles %s not found.", 
+                        paste(alleles[is.na(row_ord)], collapse = ", ")))
+      }
+      cig_freqs <- cig_freqs[na.omit(row_ord),, drop = FALSE]
+    }
+    
     header_type <- match.arg(header)
     header_name <- "Total"
     type <- match.arg(type)
@@ -807,7 +865,6 @@ See also:
       if (header_type == "default") header <- round(colSums(cig_freqs), 2)
       cig_freqs <- round(cig_freqs, 2)
       col_sums <- rep(100, ncol(cig_freqs))
-      names(col_sums) <- colnames(cig_freqs)
     } else if (type == "counts"){
       col_sums <- colSums(.self$.getFilteredCigarTable())
     }
@@ -826,7 +883,7 @@ See also:
   },
 
   plotVariants = function(min.freq = 0, min.count = 0,
-                   top.n = nrow(.self$cigar_freqs),
+                   top.n = nrow(.self$cigar_freqs), alleles = NULL,
                    renumbered = .self$pars["renumbered"],
                    add.other = TRUE, create.plot = TRUE,
                    plot.regions = NULL, allow.partial = TRUE, ...){
@@ -845,6 +902,8 @@ Input parameters:
                     (default: plot all)
                     Note that if there are ties in variant ranks,
                     top.n only includes ties with all members ranking <= top.n
+  alleles:          Alleles to include after filtering.  Default NULL means use all
+                    alleles that pass filtering.
   renumbered:       If TRUE, the x-axis is numbered with respect to the target
                     (cut) site.  If FALSE, x-axis shows genomic locations.
                     (default: TRUE)
@@ -861,6 +920,16 @@ Return value:
 '
 
     cig_freqs <- .self$.getFilteredCigarTable(top.n, min.count, min.freq)
+    
+    if (! is.null(alleles)){
+      row_ord <- match(alleles, rownames(cig_freqs))
+      if (any(is.na(row_ord))){
+        warning(sprintf("After filtering, alleles %s not found.", 
+                        paste(alleles[is.na(row_ord)], collapse = ", ")))
+      }
+      cig_freqs <- cig_freqs[na.omit(row_ord),, drop = FALSE]
+    }
+    
     # If there are no chimeric alignments, drop "Other"
     if ("Other" %in% rownames(cig_freqs)){
       cig_freqs <- cig_freqs[rownames(cig_freqs) != "Other",, drop = FALSE]
@@ -918,35 +987,50 @@ Return value:
     args <- modifyList(args, dots)
     if (! isTRUE(create.plot)) return(args)
 
+    if (! is.null(plot.regions)){
+      args <- .self$.truncatePlot(args)
+    }
+    
     p <- do.call(plotAlignments, args)
     return(p)
   },
 
-  .getInsertions = function(with_cigars = TRUE){
-    # Used by plotVariants for getting a table of insertions
 
-    if (with_cigars == FALSE){
-      all_ins <- do.call(rbind, lapply(.self$crispr_runs,
-                                       function(x) x$insertions))
-    } else {
-      all_ins <- do.call(rbind, lapply(.self$crispr_runs, function(x) {
-        ik <- x$ins_key
-        v <- data.frame(ik, x$cigar_labels[as.integer(names(ik))])
-        v <- v[!duplicated(v),]
-        v <- v[order(v$ik),]
-        cbind(x$insertions[v[,1],], cigar = v[,2])
-      }))
-    }
-    if (nrow(all_ins) == 0) {
-      .self$field("insertion_sites", all_ins)
-      return()
-    }
-    new_ins_sites <- all_ins[order(all_ins$start, all_ins$seq),, drop = FALSE]
-    .self$field("insertion_sites", new_ins_sites)
+
+  .truncatePlot = function(plot_args){
+      stop("plot truncation for crispr_set not implemented yet")
+    
+      cig_labels <- lapply(.self$crispr_runs, function(x) x$cigar_labels)
+      lab_to_aln <- match(names(args$alns), cig_labels)
+    
+      #all_alns <- .self$crispr_runs[[1]]$alns
+      #cigars <- cigar(all_alns)[lab_to_aln]
+      #starts <- start(all_alns)[lab_to_aln]
   },
 
 
-  consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = FALSE){
+  .getInsertions = function(){
+    # Used by plotVariants for getting a table of insertions
+
+      all_ins <- lapply(seq_along(.self$crispr_runs), function(i){
+          ins <- .self$crispr_runs[[i]]$getInsertionSeqs(.self$target)
+          if (! is.null(ins)) ins$sample <- i
+          ins  
+      })
+    
+      all_ins <- do.call(rbind, all_ins)
+      if (is.null(all_ins)){
+        all_ins <- data.frame()
+      } else {
+        all_ins <- all_ins[order(all_ins$start),]
+        all_ins$cigar_label <- as.character(all_ins$cigar_label)
+      }      
+      
+    .self$field("insertion_sites", all_ins)
+  },
+
+
+  consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = TRUE){
 '
 Description:
 Get variants by their cigar string, make the pairwise alignments for the consensus
@@ -1005,8 +1089,8 @@ if return_nms = TRUE
     seqs <- Biostrings::DNAStringSet(seqs)
     
     if (isTRUE(return_nms)){
-      return(list(seqs = seqs, split_nms = names(splits), 
-                  split_labels = splits_labels, starts = starts))
+      mcols(seqs) <- data.frame(cigar = names(splits), 
+                      label = splits_labels, start = starts)
     }
 
     names(seqs) <- splits_labels
@@ -1032,11 +1116,11 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # Do this just for the alns to be displayed?
     temp <- .self$consensusAlleles(cig_freqs, return_nms = TRUE)
     
-    alns <- seqsToAln(temp$split_nms, temp$seqs, target = .self$target,
-                 aln_start = temp$starts, 
+    alns <- seqsToAln(mcols(temp)$cigar, temp, target = .self$target,
+                 aln_start = mcols(temp)$start, 
                  reverse_complement = .self$pars$rc, ...)
 
-    names(alns) <- temp$split_labels
+    names(alns) <- mcols(temp)$label
     alns
   },
 

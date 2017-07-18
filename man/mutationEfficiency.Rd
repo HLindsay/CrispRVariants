@@ -42,7 +42,8 @@ A vector of efficiency statistics per sample and overall, or
 a matrix of efficiency statistics per group if a group is provided
 }
 \description{
-Returns the percentage of sequences that contain at least one mutation.
+Returns the percentage of sequences that contain at least
+one mutation.
 }
 \examples{
 data("gol_clutch1")

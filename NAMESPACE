@@ -3,6 +3,7 @@
 export(CrisprRun)
 export(CrisprSet)
 export(abifToFastq)
+export(alns)
 export(barplotAlleleFreqs)
 export(consensusSeqs)
 export(countDeletions)

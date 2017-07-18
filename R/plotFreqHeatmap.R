@@ -195,12 +195,16 @@ setMethod("plotFreqHeatmap", signature("matrix"),
 #'@param top.n  Show the n top ranked variants.  Note that if the nth and n+1th
 #'variants have equal rank, they will not be shown.   (Default: 50)
 #'@param min.freq i (%) only plot variants with frequency >= i% in at least
-#' one sample (default: 0, i.e no frequency cutoff)
+#' one sample (Default: 0, i.e no frequency cutoff)
 #'@param min.count i (integer) only plot variants with count >= i in at least
 #' one sample (default: 0, i.e no count cutoff)
 #'@param type Plot either "counts" or "proportions"
 #'@param order A list of column names or indices specifying the order of the
 #'columns in the plot
+#'@param alleles A list of alleles to include.  Can be used to display
+#'only alleles of interest or to order the alleles.
+#'The default value NULL means all alleles passing the frequency cut offs 
+#'will be included.
 #'@examples
 #'#Load a CrisprSet object for plotting
 #'data("gol_clutch1")
@@ -209,9 +213,11 @@ setMethod("plotFreqHeatmap", signature("matrix"),
 #'plotFreqHeatmap(gol)
 setMethod("plotFreqHeatmap", signature("CrisprSet"),
           function(obj, ..., top.n = 50, min.freq = 0, min.count = 1,
-                   type = c("counts", "proportions"), order = NULL) {
+                   type = c("counts", "proportions"), order = NULL,
+                   alleles = NULL) {
 
   result <- obj$heatmapCigarFreqs(top.n = top.n, min.freq = min.freq,
-                     min.count = min.count, type = type, order = order, ...)
+                     min.count = min.count, type = type, order = order,
+                     alleles = alleles, ...)
   return(result)
 })

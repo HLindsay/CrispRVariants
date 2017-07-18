@@ -18,7 +18,8 @@ abifToFastq(seqname, fname, outfname, trim = TRUE, cutoff = 0.05,
 
 \item{cutoff}{probability cutoff}
 
-\item{min_seq_len}{minimum number of sequenced bases required in order to trim the read}
+\item{min_seq_len}{minimum number of sequenced bases required in order to trim
+the read}
 
 \item{offset}{phred offset for quality scores}
 

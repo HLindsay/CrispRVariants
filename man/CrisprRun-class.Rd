@@ -72,21 +72,11 @@ Input parameters:
   upstream:         distance upstream of the cut site to call SNVs
   downstream:       distance downstream of the cut site to call SNVs}
 
-\item{\code{getInsertionSeqs(ref_ranges, genome_ranges)}}{Description:
+\item{\code{getInsertionSeqs(target)}}{Description:
   Set the "insertions" field - a table of the locations of insertions,
   and the "ins_key" field which relates sequences indices to the insertions 
   they contain
-Input parameters:
-ref_ranges:     The cigar operations of the reads with respect to the reference
-genome_ranges:  The cigar operations of the reads with respect to the genome,
-                i.e. the reference locations shifted to their genomic start locations}
-
-\item{\code{removeSeqs(idxs)}}{Description:
-  Remove sequences from a CrisprRun object and from the internal CrisprRun
-  fields that store insertion locations for plotting.
-
-Input parameters:
-  idxs:     Indexes of reads to remove}
+Input parameters:}
 }}
 
 \examples{

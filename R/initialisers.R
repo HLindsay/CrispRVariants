@@ -106,7 +106,7 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
             # If there are no non-chimeric reads, chimeras can still be stored
             if (length(reads) == 0){
               if (length(chimeras) == 0) {return(NULL)}
-              crun <- CrisprRun(reads, target, IRanges::IRangesList(), rc = rc,
+              crun <- CrisprRun(reads, target, rc = rc,
                                 name = name, chimeras = chimeras, 
                                 verbose = verbose)
               return(crun)
@@ -147,7 +147,7 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
             if (length(bam) == 0 & length(chimeras) == 0) return(NULL)
 
             if (length(bam) == 0){
-              crun <- CrisprRun(bam, target, IRanges::IRangesList(), rc = rc,
+              crun <- CrisprRun(bam, target, rc = rc,
                           name = name, chimeras = chimeras, verbose = verbose)
               return(crun)
             }
@@ -157,12 +157,13 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
             # narrow aligned reads
             result <- narrowAlignments(bam, target, reverse.complement = rc,
                                     verbose = verbose, minoverlap = minoverlap)
-            gen_ranges <- GenomicAlignments::cigarRangesAlongReferenceSpace(
-                             cigar(result), pos = start(result))
-
+            
             # Collapse pairs of narrowed reads
 
             if (isTRUE(collapse.pairs)){
+              gen_ranges <- GenomicAlignments::cigarRangesAlongReferenceSpace(
+                               cigar(result), pos = start(result))
+              
               result <- collapsePairs(result, genome.ranges = gen_ranges,
                                       use.consensus = use.consensus,
                                       keep.unpaired = keep.unpaired, verbose = verbose)
@@ -174,12 +175,12 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
               if (length(chimeras) == 0){
                 return(NULL)
               }
-              crun <- CrisprRun(result, target, IRanges::IRangesList(), rc = rc,
-                                name = name, chimeras = chimeras, verbose = verbose)
+              crun <- CrisprRun(result, target, rc = rc, name = name,
+                                chimeras = chimeras, verbose = verbose)
               return(crun)
             }
 
-            crun <- CrisprRun(result, target, gen_ranges, rc = rc, name = name,
+            crun <- CrisprRun(result, target, rc = rc, name = name,
                               chimeras = chimeras, verbose = verbose)
             crun
           })
@@ -260,15 +261,16 @@ setMethod("readsToTarget", signature("character", "GRanges"),
 
             # If names are not specified, set them to the filenames
             if (is.null(names)){
-              names <- reads
+              names <- basename(reads)
             }
             names <- as.character(names)
 
             orientation <- match.arg(orientation)
-                        
+             
             cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
-                                    collapse.pairs, names, use.consensus,
-                                    target.loc, verbose = verbose,
+                                    collapse.pairs, names = names,
+                                    use.consensus = use.consensus,
+                                    target.loc = target.loc, verbose = verbose,
                                     chimeras = chimeras, minoverlap = minoverlap,
                                     orientation = orientation, ...)
 
@@ -435,8 +437,6 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
     bamByPCR <- lapply(seq_along(temp[[1]]), tlist)
     tg_gr <- GRangesList(as.list(targets))
 
-    dummy <- gc()
-
     result <- BiocParallel::bplapply(seq_along(bamByPCR), function(i){
       bams <- bamByPCR[[i]]
       tgt <- tg_gr[[i]]
@@ -464,6 +464,12 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
     result <- result[!sapply(result, is.null)]
     result
   })
+
+
+
+.checkReadsToTarget <- function(targets, primer.ranges, reference){
+}
+
 
 
 .checkReadsToTargets <- function(targets, primer.ranges, references){
@@ -710,6 +716,10 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
     return(list(bam = temp$bam, chimeras = temp$chimeras[[1]]))
   }
   if (chimeras == "merge"){
+    
+    message(paste0("Caution: mergeChimeras assumes a sorted bam file\n",
+                   "and has only been tested with bwa mem alignments!\n"))
+    
     result <- mergeChimeras(bam, chimera_idxs, verbose = verbose)
     return(list(bam = c(bam[-chimera_idxs], result$merged), chimeras = result$unmerged))
     # warning("Merging chimeras not implemented yet, ignoring chimeras")

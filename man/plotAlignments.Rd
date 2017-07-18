@@ -58,7 +58,7 @@ for plotting (Default: TRUE)}
 \item{alns}{A named character vector of aligned sequences, with insertions removed}
 
 \item{ins.sites}{A table of insertion_sites, which must include cols
-named "start", "cigar" and "seq", for the start of the insertion in the
+named "start", "cigar", "seq" and "count" for the start of the insertion in the
 corresponding sequence}
 
 \item{highlight.pam}{should location of PAM with respect to the target site be
