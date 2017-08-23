@@ -1,19 +1,15 @@
 ---
 title: "CrispRVariants User Guide"
 author: "Helen Lindsay, Mark Robinson"
-date: "`r doc_date()`"
-package: "`r pkg_ver('CrispRVariants')`"
 output: 
   BiocStyle::pdf_document:
     fig_caption: true
+package: "CrispRVariants"
 vignette: >
   %\VignetteIndexEntry{CrispRVariants}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-\tableofcontents
-\newpage
 
 <!-- can build with:
 rmarkdown::render("user_guide.Rmd", rmarkdown::pdf_document())
@@ -428,7 +424,7 @@ group <- md$Group
 ```
 
 
-```{r ptena_plot, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
+```{r ptena-plot, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."}
 p <- plotVariants(crispr_set, txdb = txdb, gene.text.size = 8, 
     row.ht.ratio = c(1,8), col.wdth.ratio = c(4,2),
     plotAlignments.args = list(line.weight = 0.5, ins.size = 2, 
@@ -908,7 +904,7 @@ the following code shows the three most common variant alleles in
 the gol dataset.  The header here does not equal the sum of the
 columns as not all variants are shown in the plot.
 
-```{r hmap_default, fig.height = 3, fig.width = 4, fig.align='center', fig.cap = "plotFreqHeatmap with default options"}
+```{r hmap-default, fig.height = 3, fig.width = 4, fig.align='center', fig.cap = "plotFreqHeatmap with default options"}
 # Save the plot to a variable then add a title using ggplot2 syntax.
 # If the plot is not saved to a variable the unmodified plot is displayed.
 p <- plotFreqHeatmap(gol, top.n = 3)
