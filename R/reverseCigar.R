@@ -6,5 +6,5 @@ reverseCigar <- function(cigars){
   wdths <- explodeCigarOpLengths(cigars)
   ops <- explodeCigarOps(cigars)
   temp <- rev(relist(rev(paste0(unlist(wdths), unlist(ops))), rev(wdths)))
-  result <- as.character(Map(paste, temp, collapse = ""))
+  result <- as.character(Map(base::paste, temp, collapse = ""))
 }

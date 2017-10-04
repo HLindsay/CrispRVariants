@@ -93,7 +93,7 @@ seqsToPartialAln <- function(cigars, starts, alns, reference, target,
     ref_paste <- sprintf("/ %s /", ndeleted)    
     aln_paste <- sprintf("/ %s /", paste(rep(".", nchar(ndeleted)), collapse = ""))
     
-    aln_result <- lapply(result, paste, collapse = aln_paste)
+    aln_result <- lapply(result, base::paste, collapse = aln_paste)
     ref_result <- paste(ref_result, collapse = ref_paste)
     alns <- as.character(aln_result)
     names(alns) <- names(aln_result)    

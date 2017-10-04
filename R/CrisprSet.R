@@ -482,7 +482,7 @@ Input parameters:
     }
     mask <- relist(loc_mask & size_mask, vars)
     vars <- as.list(IRanges::CharacterList(vars)[mask])
-    vars <- lapply(vars, paste, sep = ",", collapse = ",")
+    vars <- lapply(vars, base::paste, sep = ",", collapse = ",")
 
     vars[vars == ""] <- .self$pars$match_label
     cig_freqs <- rowsum(cig_freqs, unlist(vars))

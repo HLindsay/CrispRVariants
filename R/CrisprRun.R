@@ -166,7 +166,7 @@ Input parameters:
   .splitChimeras = function(){
     splits <- split(cigar(.self$chimeras), names(.self$chimeras))
     if (length(splits) == 0) return(data.frame())
-    combination <- sapply(splits, paste, collapse=";")
+    combination <- sapply(splits, base::paste, collapse=";")
     tt <- as.data.frame(table(combination))
     tt <- tt[order(tt$Freq, decreasing = TRUE),]
     tt
@@ -223,7 +223,7 @@ Input parameters:
     if (isTRUE(rc)){
       temp[complex] <- sapply(temp[complex], function(x) paste(rev(x), collapse = ","))
     } else {
-      temp[complex] <- sapply(temp[complex], paste, collapse = ",")
+      temp[complex] <- sapply(temp[complex], base::paste, collapse = ",")
     }
     
     spans <- width(.self$alns) == nchar(ref) 
