@@ -668,6 +668,9 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
   if (ch.action == "ignore"){
     # If chimeras are not to be excluded or merged,
     # we only need to read in reads overlapping the target region
+    if (! file.exists(paste0(file, ".bam"))){
+      Rsamtools::indexBam(file)
+    }
     param <- Rsamtools::ScanBamParam(what = c("seq", "flag"), which = target)
   } else {
     # In this case, must read in the entire bam to be sure of finding chimeric reads

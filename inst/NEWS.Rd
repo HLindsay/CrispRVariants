@@ -1,6 +1,13 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.5.5}{
+   \itemize{
+      \item Autogenerate bam index for 
+      \code{readsToTarget} option chimeras = "ignore"
+  }
+}
+
 \section{Changes in version 1.5.3}{
   \itemize{
     \item \code{plotAlignments} now accepts the same filtering arguments
