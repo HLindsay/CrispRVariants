@@ -95,8 +95,13 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     rearr <- rearr < 0
 
     mergeable <- one_chr & same_strd & has_genome_gap & has_read_gap & !rearr
+    
+    chimeras <- bam[chimera_idxs][mergeable]
+    chimeras <- chimeras[!duplicated(names(chimeras))] # select the leftmost
+    remaining <- bam[chimera_idxs][!mergeable]
+    
     if (!any(mergeable)){                          
-      return(list(merged = GenomicAlignments::GAlignments(), unmerged = bam))
+      return(list(merged = chimeras, unmerged = remaining))
     }
     
     if (isTRUE(verbose)){ 
@@ -173,10 +178,6 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
 
     new_cigars <- aggregate(new_cigars, list(nms_codes), FUN = paste0, collapse = "")$x
 
-    chimeras <- bam[chimera_idxs][mergeable]
-    chimeras <- chimeras[!duplicated(names(chimeras))] # select the leftmost
-    remaining <- bam[chimera_idxs][!mergeable]
-    
     # WARNING: assumption:  The primary alignment is not hard clipped
     new_cigars <- gsub("H", "S", new_cigars)    
 

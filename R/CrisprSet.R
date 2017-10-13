@@ -835,8 +835,10 @@ See also:
     '
 
     filter_fun <- .self$.getFilteredCigarTable
-    filter.args <- suppressWarnings(dispatchDots(filter_fun,
-                        top.n, min.count, min.freq, type = type, ...))
+    filter.args <- dispatchDots(filter_fun,
+                        top.n = top.n, min.count = min.count,
+                        min.freq = min.freq, type = type, ...)
+    
     cig_freqs <- do.call(filter_fun, filter.args)
 
     # Alleles determines row order and alleles included

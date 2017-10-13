@@ -1,7 +1,16 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
-\section{Changes in version 1.5.5}{
+
+\section{Changes in version 1.5.7}{
+   \itemize{
+      \item Fixes major bug preventing filtering in \code{plotFreqHeatmap}
+      \item Fixes bug in \code{mergeChimeras} if no chimeras mergeable
+  }
+}
+
+
+\section{Changes in version 1.5.6}{
    \itemize{
       \item Autogenerate bam index for 
       \code{readsToTarget} option chimeras = "ignore"

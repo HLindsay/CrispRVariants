@@ -233,6 +233,7 @@ dispatchDots <- function(func, ..., call = FALSE){
       warning("dispatchDots may not work as expected with S4 functions")
     }
     func_defaults <- formals(func)
+    
     result <- utils::modifyList(func_defaults, list(...))[names(func_defaults)]
     if (isTRUE(call)) return(do.call(func, result))
     result
