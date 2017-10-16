@@ -193,7 +193,8 @@ Input parameters:
     order:        Reorder the columns according to this order (Default: NULL)
     alleles:      Names of alleles to include.  Selection of alleles takes
                   place after filtering (Default: NULL).
-    ...:
+    exclude:      Names of alleles to exclude (Default: NULL)
+    ...:          Extra filtering or plotting options
 
 Return value:
     A ggplot2 plot object.  Call "print(obj)" to display

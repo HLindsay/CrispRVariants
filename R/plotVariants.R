@@ -152,8 +152,6 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
 }
 
 
-
-
 .getOverlappingGenes <- function(txdb, target, all.transcripts = TRUE){
     genomicfeatures <- requireNamespace("GenomicFeatures")
     stopifnot(isTRUE(genomicfeatures))
@@ -254,78 +252,77 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
                         panel.spacing = grid::unit(c(0.1,0.1,0.1,0.1), "lines"),
                         plot.title = NULL, all.transcripts = TRUE){
 
-  genomicfeatures <- requireNamespace("GenomicFeatures")
-  stopifnot(isTRUE(genomicfeatures))
+    genomicfeatures <- requireNamespace("GenomicFeatures")
+    stopifnot(isTRUE(genomicfeatures))
 
+    genes <- .getOverlappingGenes(txdb, target, all.transcripts = all.transcripts)
+    if ("grob" %in% class(genes)) return(genes)
 
-  genes <- .getOverlappingGenes(txdb, target, all.transcripts = all.transcripts)
-  if ("grob" %in% class(genes)) return(genes)
-  
-  result <- .makeGeneSegments(genes, txdb, target)
-  all_exs <- result$all_exs
-  gene_spans <- result$gene_spans
-  
-  min_st <- min(all_exs$start)
-  max_end <- max(all_exs$end)
+    result <- .makeGeneSegments(genes, txdb, target)
+    all_exs <- result$all_exs
+    gene_spans <- result$gene_spans
 
-  tcks <- unname(quantile(min_st:max_end, seq(1,100, by = 2)*0.01))
-  tcks <- lapply(gene_spans, function(sp){
-    tcks[tcks > start(sp) & tcks < end(sp)]
-  })
+    min_st <- min(all_exs$start)
+    max_end <- max(all_exs$end)
 
-  tck_lns <- lapply(tcks, length)
-  tcks <- data.frame("tloc" = unlist(tcks),
-                     "ys" = rep(1:length(tcks), lapply(tcks, length)))
-  lns <- data.frame(tloc = c(start(gene_spans),end(gene_spans)),
-                    ys = rep(seq_along(gene_spans),2))
+    tcks <- unname(quantile(min_st:max_end, seq(1,100, by = 2)*0.01))
+    tcks <- lapply(gene_spans, function(sp){
+      tcks[tcks > start(sp) & tcks < end(sp)]
+    })
 
-  all_exs$ymax <- all_exs$ts + 0.3
-  all_exs$ymin <- all_exs$ts - 0.3
-  is_utr <- all_exs$type == "utr"
-  all_exs$ymax[is_utr] <- all_exs$ts[is_utr] + 0.2
-  all_exs$ymin[is_utr] <- all_exs$ts[is_utr] - 0.2
+    tck_lns <- lapply(tcks, length)
+    tcks <- data.frame("tloc" = unlist(tcks),
+                       "ys" = rep(1:length(tcks), lapply(tcks, length)))
+    lns <- data.frame(tloc = c(start(gene_spans),end(gene_spans)),
+                      ys = rep(seq_along(gene_spans),2))
 
-  target_df <- data.frame(xmin = start(target), xmax = end(target),
-                          ymin = 0, ymax = ceiling(max(all_exs$ymax)))
+    all_exs$ymax <- all_exs$ts + 0.3
+    all_exs$ymin <- all_exs$ts - 0.3
+    is_utr <- all_exs$type == "utr"
+    all_exs$ymax[is_utr] <- all_exs$ts[is_utr] + 0.2
+    all_exs$ymin[is_utr] <- all_exs$ts[is_utr] - 0.2
 
-  if (is.null(plot.title)){ plot.title <- paste(unique(genes$GENEID), sep = ";")}
+    target_df <- data.frame(xmin = start(target), xmax = end(target),
+                            ymin = 0, ymax = ceiling(max(all_exs$ymax)))
 
-  # Choose either right or left pointing arrows for the transcript plots
-  #strands <- unlist(lapply(all_sections, function(x) as.character(strand(x[1]))))
-  
-  strands <- rep(as.character(strand(gene_spans)), tck_lns)
-  strands[strands == "-"] <- 60
-  strands[strands == "+"] <- 62
-  tcks$shp <- as.integer(strands)
+    if (is.null(plot.title)){ plot.title <- paste(unique(genes$GENEID), sep = ";")}
 
-  p <- ggplot2::ggplot(tcks) +
-    geom_point(aes_(x = quote(tloc), y = quote(ys), group = quote(ys),
-                     shape = quote(shp)), size = 2) +
-    geom_line(data = lns, aes_(x = quote(tloc), y = quote(ys),
-                                group = quote(ys))) +
-    scale_shape_identity()
+    # Choose either right or left pointing arrows for the transcript plots
+    #strands <- unlist(lapply(all_sections, function(x) as.character(strand(x[1]))))
 
-  p <- p + geom_rect(data = all_exs, fill = "black", color = "black",
-                     aes_(xmin = quote(start), xmax = quote(end),
-                           ymin = quote(ymin), ymax = quote(ymax)))
+    strands <- rep(as.character(strand(gene_spans)), tck_lns)
+    strands[strands == "-"] <- 60
+    strands[strands == "+"] <- 62
+    tcks$shp <- as.integer(strands)
 
-  p <- p + geom_rect(data = target_df,
-                     aes_(xmin = quote(xmin), xmax = quote(xmax),
-                           ymin = quote(ymin), ymax = quote(ymax)),
-                     colour = target.colour, fill = NA, size = target.size)
+    p <- ggplot2::ggplot(tcks) +
+      geom_point(aes_(x = quote(tloc), y = quote(ys), group = quote(ys),
+                       shape = quote(shp)), size = 2) +
+      geom_line(data = lns, aes_(x = quote(tloc), y = quote(ys),
+                                  group = quote(ys))) +
+      scale_shape_identity()
 
-  if (! plot.title == FALSE){
-    p <- p + ggtitle(plot.title)
-  }
-  p <- p + theme_minimal() +
-       theme(axis.text.x = element_text(size = gene.text.size),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.spacing = panel.spacing,
-          text = element_text(size = gene.text.size),
-          axis.ticks.y = element_blank()) +
-       ylab(NULL) + xlab(NULL)
+    p <- p + geom_rect(data = all_exs, fill = "black", color = "black",
+                       aes_(xmin = quote(start), xmax = quote(end),
+                             ymin = quote(ymin), ymax = quote(ymax)))
 
-  return(p)
+    p <- p + geom_rect(data = target_df,
+                       aes_(xmin = quote(xmin), xmax = quote(xmax),
+                             ymin = quote(ymin), ymax = quote(ymax)),
+                       colour = target.colour, fill = NA, size = target.size)
+
+    if (! plot.title == FALSE){
+      p <- p + ggtitle(plot.title)
+    }
+    p <- p + theme_minimal() +
+         theme(axis.text.x = element_text(size = gene.text.size),
+            axis.text.y = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.spacing = panel.spacing,
+            text = element_text(size = gene.text.size),
+            axis.ticks.y = element_blank()) +
+         ylab(NULL) + xlab(NULL)
+
+    return(p)
 }

@@ -233,49 +233,54 @@ setMethod("readsToTarget", signature("character", "GRanges"),
                    orientation = c("target","opposite","positive"),
                    names = NULL, minoverlap = NULL, verbose = TRUE){
 
-            # Make sure the reference sequence consists of one sequence
-            # Coerce to "DNA string if necessary"
-            if (class(reference) == "character" | class(reference) == "DNAStringSet"){
-              if (length(reference) > 1){
-                stop("Reference should be a single sequence, as a DNAString")
-              }
-              reference <- as(reference[[1]], "DNAString")
-            }
-            args <- list(...)
-            c_to_t <- 5
-            if ("chimera.to.target" %in% names(args)){
-              c_to_t <- args[["chimera.to.target"]]
-            }
+     # Make sure the reference sequence consists of one sequence
+     # Coerce to "DNA string if necessary"
+     if (class(reference) == "character" | class(reference) == "DNAStringSet"){
+       if (length(reference) > 1){
+           stop("Reference should be a single sequence, as a DNAString")
+       }
+       reference <- as(reference[[1]], "DNAString")
+     }
+     args <- list(...)
+     c_to_t <- 5
+     if ("chimera.to.target" %in% names(args)){
+       c_to_t <- args[["chimera.to.target"]]
+     }
 
-            chimeras <- match.arg(chimeras)
+     chimeras <- match.arg(chimeras)
+       
+     if (chimeras == "merge"){
+       message(paste0("Caution: mergeChimeras assumes a sorted bam file\n",
+                      "and has only been tested with bwa mem alignments!\n"))
+     }
+       
+     temp <- lapply(reads, readTargetBam, target = target,
+                    exclude.ranges = exclude.ranges,
+                    exclude.names = exclude.names,
+                    chimeras = chimeras, by.flag = collapse.pairs,
+                    chimera.to.target = c_to_t,
+                    verbose = verbose)
 
-            temp <- lapply(reads, readTargetBam, target = target,
-                           exclude.ranges = exclude.ranges,
-                           exclude.names = exclude.names,
-                           chimeras = chimeras, by.flag = collapse.pairs,
-                           chimera.to.target = c_to_t,
-                           verbose = verbose)
+     alns <- lapply(temp, "[[", "bam")
+     chimeras <- lapply(temp, "[[", "chimeras")
 
-            alns <- lapply(temp, "[[", "bam")
-            chimeras <- lapply(temp, "[[", "chimeras")
+     # If names are not specified, set them to the filenames
+     if (is.null(names)){
+       names <- basename(reads)
+     }
+     names <- as.character(names)
 
-            # If names are not specified, set them to the filenames
-            if (is.null(names)){
-              names <- basename(reads)
-            }
-            names <- as.character(names)
+     orientation <- match.arg(orientation)
+        
+     cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
+                             collapse.pairs, names = names,
+                             use.consensus = use.consensus,
+                             target.loc = target.loc, verbose = verbose,
+                             chimeras = chimeras, minoverlap = minoverlap,
+                             orientation = orientation, ...)
 
-            orientation <- match.arg(orientation)
-             
-            cset <- alnsToCrisprSet(alns, reference, target, reverse.complement,
-                                    collapse.pairs, names = names,
-                                    use.consensus = use.consensus,
-                                    target.loc = target.loc, verbose = verbose,
-                                    chimeras = chimeras, minoverlap = minoverlap,
-                                    orientation = orientation, ...)
-
-            cset
-          })
+     cset
+})
 
 
 #'@export
@@ -719,10 +724,6 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
     return(list(bam = temp$bam, chimeras = temp$chimeras[[1]]))
   }
   if (chimeras == "merge"){
-    
-    message(paste0("Caution: mergeChimeras assumes a sorted bam file\n",
-                   "and has only been tested with bwa mem alignments!\n"))
-    
     result <- mergeChimeras(bam, chimera_idxs, verbose = verbose)
     return(list(bam = c(bam[-chimera_idxs], result$merged), chimeras = result$unmerged))
     # warning("Merging chimeras not implemented yet, ignoring chimeras")

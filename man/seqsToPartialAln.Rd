@@ -25,6 +25,9 @@ If supplied, plot locations are adjusted for gaos (Default: NULL)}
 
 \item{xticks}{Locations for x ticks in plot (Default: NULL)}
 }
+\value{
+A list of the truncated alignments (alns) and reference (ref)
+}
 \description{
 Given a character vector of pairwise alignments and a
 region to display, trims alignments to the display region

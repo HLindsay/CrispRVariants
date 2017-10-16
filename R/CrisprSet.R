@@ -302,6 +302,7 @@ Input parameters:
                                     min.count = 1, min.freq = 0,
                                     include.chimeras = TRUE,
                                     include.nonindel = TRUE,
+                                    exclude = NULL,
                                     type = c("counts", "proportions")){
 
     # Consider reordering by proportion instead of count at initialisation?
@@ -320,7 +321,8 @@ Input parameters:
         m <- rbind(m, ch_cnts)
         rownames(m) <- c(m_nms, "Other")
       } else if (length(m) == 0){
-        m <- matrix(ch_cnts, nrow = 1, dimnames =list("Other", names(ch_cnts)))
+        m <- matrix(ch_cnts, nrow = 1,
+                    dimnames =list("Other", names(ch_cnts)))
       }
       # If all rows should be returned, add 1 to top.n
       if (top.n == nrow(.self$cigar_freqs)) top.n <- top.n + 1
@@ -328,7 +330,7 @@ Input parameters:
       m <- .self$cigar_freqs
       if (nrow(m) == 0) return(NULL)
     }
-
+    
     # Filtering takes precedence over removing nonvariants
     # and selecting top.n
 
@@ -351,11 +353,15 @@ Input parameters:
       m <- m[keep_freq & keep_count,, drop = FALSE][topn,, drop = FALSE]
     }
 
+    # Filtering
     if (include.nonindel == FALSE){
       nvr <- sprintf("%s|%s", .self$pars$match_label, .self$pars$mismatch_label)
       m <- m[!grepl(nvr, rownames(m)),,drop = FALSE]
     }
-
+    if (! is.null(exclude)){
+      m <- m[! rownames(m) %in% exclude,, drop = FALSE]
+    }
+    
     m
   },
 
@@ -825,6 +831,7 @@ Input parameters:
     order:        Reorder the columns according to this order (Default: NULL)
     alleles:      Names of alleles to include.  Selection of alleles takes
                   place after filtering (Default: NULL).
+    exclude:      Names of alleles to exclude (Default: NULL)
     ...:          Extra filtering or plotting options
 
 Return value:
@@ -835,9 +842,9 @@ See also:
     '
 
     filter_fun <- .self$.getFilteredCigarTable
-    filter.args <- dispatchDots(filter_fun,
-                        top.n = top.n, min.count = min.count,
-                        min.freq = min.freq, type = type, ...)
+    filter.args <- suppressWarnings(dispatchDots(filter_fun,
+                           top.n = top.n, min.count = min.count,
+                           min.freq = min.freq, type = type, ...))
     
     cig_freqs <- do.call(filter_fun, filter.args)
 
