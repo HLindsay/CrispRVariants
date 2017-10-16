@@ -2,13 +2,19 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.5.8}{
+   \itemize{
+      \item Adds an option to filter variants by name when counting or
+      plotting
+  }
+}
+
 \section{Changes in version 1.5.7}{
    \itemize{
       \item Fixes major bug preventing filtering in \code{plotFreqHeatmap}
       \item Fixes bug in \code{mergeChimeras} if no chimeras mergeable
   }
 }
-
 
 \section{Changes in version 1.5.6}{
    \itemize{
