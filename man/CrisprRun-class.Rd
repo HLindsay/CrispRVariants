@@ -22,7 +22,7 @@ i.e. displayed with respect to the negative strand?  (Default: FALSE)}
 
 \item{chimeras}{Off-target chimeric alignments not in bam.  (Default: empty)}
 
-\item{verbose}{Print information about initialisation progress (Default: TRUE)}
+\item{verbose}{Print information about initialisation progress (Default: FALSE)}
 }
 \description{
 A ReferenceClass container for a single sample of alignments narrowed
@@ -51,10 +51,9 @@ initialisation of a CrisprRun object.}
 \section{Methods}{
 
 \describe{
-\item{\code{getCigarLabels(target.loc, genome_to_target, ref, separate.snv = TRUE,
-  match.label = "no variant", mismatch.label = "SNV", rc = FALSE,
-  keep.ops = c("I", "D", "N"), upstream = 8, downstream = min(5,
-  width(ref) - cut_site))}}{Description:
+\item{\code{getCigarLabels(target.loc, genome_to_target, ref, separate.snv, rc, match.label,
+  mismatch.label, keep.ops = c("I", "D", "N"), upstream = 8,
+  downstream = min(6, width(ref) - cut_site))}}{Description:
   Sets the "cig_labels" field, returns the cigar labels.
 
 Input parameters:

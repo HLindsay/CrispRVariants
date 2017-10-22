@@ -45,6 +45,19 @@ reference <- Biostrings::DNAString("GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT")
 gdl <- GenomicRanges::GRanges("chr17", IRanges(23648469, 23648501),
            strand = "-")
 
+# Constructed alignments for checking snvs
+snv <- rep(GRanges("chr17", IRanges(start = 23648469, width = 33),
+                   cigar = "33M"),5)
+strand(snv) <- c("+","-","+","-","+")
+names(snv) <- c("u8","u7","d5","d6","rc")
+mcols(snv)$seq <-  Biostrings::DNAStringSet(
+                     c("ACCTTCCAATCGTTCGGCTCGAAAGCCCATGGC",
+                       "ACCTTCCAATCGTTCGGCCGGAAAGCCCATGGC",
+                       "ACCTTGCAATCGTTCGGCTGGAAAGCCCATGGC",
+                       "ACCGTCCAATCGTTCGGCTGGAAAGCCCATGGC",
+                       "GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT"))
+
+
 test_that("Excluding reads by name works correctly", {
     # This bam file contains four non-chimeric and one chimeric read.
     # Here the non-chimeric reads are excluded by name
@@ -56,7 +69,6 @@ test_that("Excluding reads by name works correctly", {
     expect_equal(length(cset$crispr_runs[[1]]$alns), 0)
     expect_equal(length(cset$crispr_runs[[1]]$chimeras), 2)
 })
-
 
 test_that("Arguments for calling SNVs are passed on",{
     # There is a nucleotide change 19 bases upstream of the cut site
@@ -73,6 +85,33 @@ test_that("Arguments for calling SNVs are passed on",{
            target.loc = 22, upstream.snv = 20)
     expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 1)
 
+    # More checking with constructed alignments
+    snv <- GenomicAlignments::GAlignmentsList(sample1 = as(snv, "GAlignments"))
+    cset <- readsToTarget(snv, target = gdl, reference = reference, target.loc = 22)
+    
+    # Test that variant at position 7 downstream is not counted
+    expect_true(all(c("SNV:-8","SNV:6") %in% rownames(variantCounts(cset))))
+    expect_equal(variantCounts(cset)["no variant",], 2)
+    
+    # With changed parameters, neither of these SNVs are counted
+    cset2 <- readsToTarget(snv, target = gdl, reference = reference, target.loc = 22,
+                           upstream = 7, downstream = 5)
+    expect_equal(variantCounts(cset2)["no variant",], 4)
+    
+})
+
+test_that("Mismatched reference and target detected",{
+    snv <- GenomicAlignments::GAlignmentsList(sample1 = as(snv, "GAlignments"))
+    cset <- readsToTarget(snv, target = gdl,
+                          reference = Biostrings::reverseComplement(reference),
+                          target.loc = 22)
+    # Expect: there are no indel sequences
+    expect_equal(length(variantCounts(cset, include.nonindel = FALSE)), 0)
+    
+    # Expect: only one non-snv read
+    # (test via mutationEfficiency to also test snv recognition)
+    expect_equal(mutationEfficiency(cset, snv = "exclude")[["ReadCount"]], 1)
+  
 })
 
 
@@ -94,7 +133,6 @@ test_that("readsToTargets (signature character) returns a list of CrisprSets",{
 
     expect_true(class(csets[[1]]) == "CrisprSet")
 })
-
 
 test_that("Strand is chosen correctly", {
     expect_equal(rcAlns("+","target"), FALSE)

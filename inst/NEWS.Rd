@@ -2,6 +2,19 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.5.9}{
+   \itemize{
+      \item More comprehensive input checking in \code{readsToTarget},
+      removed redundant checking from CrisprSet initializer.
+      \item Fix bug where sequences falsely called no variant if
+      target is on the negative strand but positive strand reference
+      given.
+      \item Changed default SNV calling to 6 bases downstream instead
+      of 5 to cover PAM
+      \item Added tests for mismatched reference and target
+  }
+}
+
 \section{Changes in version 1.5.8}{
    \itemize{
       \item Adds an option to filter variants by name when counting or

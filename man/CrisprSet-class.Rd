@@ -17,10 +17,6 @@ Need not correspond to the guide sequence.}
 \item{rc}{Should the alignments be reverse complemented,
 i.e. displayed w.r.t the reverse strand? (default: FALSE)}
 
-\item{short.cigars}{If TRUE, variants labels are created from the location of their
-insertions and deletions.  For variants with no insertions or deletions, the locations
-of any single base mismatches are displayed (default: TRUE).}
-
 \item{names}{A list of names for each of the samples, e.g. for displaying in plots.
 If not supplied, the names of the crispr.runs are used, which default to the filenames
 of the bam files if available (Default: NULL)}
@@ -28,12 +24,12 @@ of the bam files if available (Default: NULL)}
 \item{renumbered}{Should the variants be renumbered using target.loc as the zero point?
 If TRUE, variants are described by the location of their 5'-most base with respect to the
 target.loc.  A 3bp deletion starting 5bp 5' of the cut site would be labelled
-(using short.cigars) as -5:3D (Default: TRUE)}
+as -5:3D (Default: TRUE)}
 
 \item{target.loc}{The location of the Cas9 cut site with respect to the supplied target.
 (Or some other central location).  Can be displayed on plots and used as the zero point
 for renumbering variants. For a target region with the PAM location from bases 21-23,
-the target.loc is base 17 (default: NA)}
+the target.loc is base 17 (default: 17)}
 
 \item{match.label}{Label for sequences with no variants (default: "no variant")}
 
@@ -222,6 +218,8 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
   contain and insertion or deletion, but do contain a single nucleotide
   variant (snv) can be considered as mutated, non-mutated, or not
   included in efficiency calculations as they are ambiguous.
+  Note: mutationEfficiency does not treat partial alignments differently
+
 
 Input parameters:
   snv:    One of "include" (consider reads with mismatches to be mutated),

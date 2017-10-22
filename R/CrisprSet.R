@@ -13,20 +13,17 @@
 #'Need not correspond to the guide sequence.
 #'@param rc Should the alignments be reverse complemented,
 #'i.e. displayed w.r.t the reverse strand? (default: FALSE)
-#'@param short.cigars If TRUE, variants labels are created from the location of their
-#'insertions and deletions.  For variants with no insertions or deletions, the locations
-#'of any single base mismatches are displayed (default: TRUE).
 #'@param names A list of names for each of the samples, e.g. for displaying in plots.
 #'If not supplied, the names of the crispr.runs are used, which default to the filenames
 #'of the bam files if available (Default: NULL)
 #'@param renumbered Should the variants be renumbered using target.loc as the zero point?
 #'If TRUE, variants are described by the location of their 5'-most base with respect to the
 #'target.loc.  A 3bp deletion starting 5bp 5' of the cut site would be labelled
-#'(using short.cigars) as -5:3D (Default: TRUE)
+#' as -5:3D (Default: TRUE)
 #'@param target.loc The location of the Cas9 cut site with respect to the supplied target.
 #'(Or some other central location).  Can be displayed on plots and used as the zero point
 #'for renumbering variants. For a target region with the PAM location from bases 21-23,
-#'the target.loc is base 17 (default: NA)
+#'the target.loc is base 17 (default: 17)
 #'@param match.label Label for sequences with no variants (default: "no variant")
 #'@param mismatch.label Label for sequences with only single nucleotide variants
 #'  (default: "SNV")
@@ -76,12 +73,18 @@ CrisprSet = setRefClass(
 )
 
 CrisprSet$methods(
-  initialize = function(crispr.runs, reference, target, rc = FALSE, short.cigars = TRUE,
-                        names = NULL, renumbered = TRUE, target.loc = NA,
+  initialize = function(crispr.runs, reference, target, rc = FALSE,
+                        names = NULL, renumbered = TRUE, target.loc = 17,
                         match.label = "no variant", mismatch.label = "SNV",
                         split.snv = TRUE, upstream.snv = 8, downstream.snv = 6,
-                        bpparam = BiocParallel::SerialParam(), verbose = TRUE, ...){
+                        bpparam = BiocParallel::SerialParam(),
+                        verbose = TRUE, ...){
 
+    # Assume: initializer not called directly, inputs checked by readsToTarget
+    # To do: test if checks for empty CrisprRuns are redundant
+    # Note: genomeToTargetLocs uses the strand of the target,
+    # change strand of target if orientation = "positive"?
+    
     # Setting up code to allow for a Cpf1 setting in future
     enzyme <- "Cas9"
 
@@ -90,16 +93,7 @@ CrisprSet$methods(
                   as.character(seqnames(target)), start(target), end(target),
                   length(crispr.runs)))
     }
-    if (class(reference) == "DNAStringSet" || class(reference) == "character"){
-      if (length(reference) > 1){
-        stop("A CrisprSet contains alignments to exactly one reference sequence")
-      }
-      reference <- as(reference[[1]], "DNAString")
-    }
 
-    if (width(target) != length(reference)){
-      stop("The target and the reference sequence must be the same width")
-    }
     if (isTRUE(renumbered) & is.na(target.loc)){
       stop("Must specify target.loc for renumbering variant locations.\n",
            "The target.loc is the zero point with respect to the reference string.\n",
@@ -145,7 +139,7 @@ CrisprSet$methods(
                                target_end = end(target),
                                rc = rc, match_label = match.label,
                                mismatch_label = mismatch.label, ref = ref,
-                               short = short.cigars, split.snv = split.snv,
+                               split.snv = split.snv,
                                upstream.snv = upstream.snv,
                                downstream.snv = downstream.snv,
                                bpparam = bpparam)
@@ -164,6 +158,9 @@ CrisprSet$methods(
   },
 
   .checkSamplesAndAlleles = function(alleles, samples){
+    # Not currently used
+    # checks before removing alleles from particular samples 
+    
     if (is.null(samples)) return()
     stopifnot(identical(length(alleles), length(samples)))
     if (is.character(samples) & ! 
@@ -185,10 +182,10 @@ CrisprSet$methods(
     }
   },
   
-  .setCigarLabels = function(renumbered = TRUE, target.loc = NA, target_start = NA,
+  .setCigarLabels = function(renumbered, target.loc, target_start = NA,
                              target_end = NA, rc = FALSE, match_label = "no variant",
-                             mismatch_label = "SNV", short = TRUE, split.snv = TRUE,
-                             upstream.snv = 8, downstream.snv = 5, ref = NULL,
+                             mismatch_label = "SNV", split.snv = TRUE,
+                             upstream.snv = 8, downstream.snv = 6, ref = NULL,
                              bpparam = BiocParallel::SerialParam()){
     g_to_t <- NULL
 
@@ -199,9 +196,9 @@ CrisprSet$methods(
       }
       g_to_t <- .self$.genomeToTargetLocs(target.loc, target_start, target_end, 
                              as.character(strand(.self$target)) %in% c("+", "*"))
-      }
+    }
       
-    cut.site <- ifelse(is.na(target.loc), 17, target.loc)
+    cut.site <- target.loc
 
     # rc means "display on negative strand"
     # If the guide is being displayed on the opposite strand, upstream and
@@ -497,7 +494,6 @@ Input parameters:
 
   .getSNVs = function(min.freq = 0.25, include.chimeras = TRUE){
     # Potential improvements:
-    # Relies on having short cigars, remove other options?
     # Inconsistency between input (0-1) and output (0-100)
     
     cig_fqs <- .self$.getFilteredCigarTable(include.chimeras = include.chimeras)
@@ -532,6 +528,8 @@ Description:
   contain and insertion or deletion, but do contain a single nucleotide
   variant (snv) can be considered as mutated, non-mutated, or not
   included in efficiency calculations as they are ambiguous.
+  Note: mutationEfficiency does not treat partial alignments differently
+
 
 Input parameters:
   snv:    One of "include" (consider reads with mismatches to be mutated),

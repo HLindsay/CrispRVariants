@@ -13,7 +13,7 @@
 #'i.e. displayed with respect to the negative strand?  (Default: FALSE)
 #'@param name A name for this set of reads, used in plots if present (Default: NULL)
 #'@param chimeras Off-target chimeric alignments not in bam.  (Default: empty)
-#'@param verbose Print information about initialisation progress (Default: TRUE)
+#'@param verbose Print information about initialisation progress (Default: FALSE)
 #'@field alns A GAlignments object containing the narrowed reads.  Note that if the alignments
 #'are represented with respect to the reverse strand, the "start" remains with repect to the
 #'forward strand, whilst the cigar and the sequence are reverse complemented.
@@ -57,7 +57,8 @@ CrisprRun = setRefClass(
 
 CrisprRun$methods(
   initialize = function(bam, target, rc = FALSE, name = NULL,
-                        chimeras = GenomicAlignments::GAlignments(), verbose = TRUE){
+                        chimeras = GenomicAlignments::GAlignments(),
+                        verbose = FALSE){
     
     # If no name is provided, use the coordinates
     if (is.null(name)){
@@ -174,10 +175,9 @@ Input parameters:
 
 
   getCigarLabels = function(target.loc, genome_to_target, ref,
-                             separate.snv = TRUE, match.label = "no variant",
-                             mismatch.label = "SNV",
-                             rc = FALSE, keep.ops = c("I","D","N"), upstream = 8,
-                            downstream = min(5, width(ref) - cut_site)){
+                            separate.snv, rc, match.label, mismatch.label,
+                            keep.ops = c("I","D","N"), upstream = 8,
+                            downstream = min(6, width(ref) - cut_site)){
     '
 Description:
   Sets the "cig_labels" field, returns the cigar labels.
@@ -197,14 +197,15 @@ Input parameters:
   upstream:         distance upstream of the cut site to call SNVs
   downstream:       distance downstream of the cut site to call SNVs'
     
-    cigs <- cigar(.self$alns)
-    wdths <- explodeCigarOpLengths(cigs)
-    ops <- explodeCigarOps(cigs)
+    cigs <- GenomicAlignments::cigar(.self$alns)
+    wdths <- GenomicAlignments::explodeCigarOpLengths(cigs)
+    ops <- GenomicAlignments::explodeCigarOps(cigs)
     temp <- CharacterList(relist(paste0(unlist(wdths), unlist(ops)), wdths))
     ops <- CharacterList(ops)
     keep <- ops %in% keep.ops
 
-    rranges <- cigarRangesAlongReferenceSpace(cigs, pos = start(.self$alns))[keep]
+    rranges <- cigarRangesAlongReferenceSpace(cigs, pos = start(.self$alns),
+                                              ops = keep.ops)
     # here get snvs, add snv ops
 
     if (isTRUE(rc)){
@@ -213,6 +214,7 @@ Input parameters:
       glocs <- start(rranges)
     }
     
+    # Add location to cigar operations
     temp <- paste(genome_to_target[as.character(unlist(glocs))],
                   unlist(temp[keep]), sep = ":")
         
@@ -237,7 +239,6 @@ Input parameters:
                                     mismatch_label = mismatch.label,
                                     cut_site = target.loc, upstream = upstream,
                                     downstream = downstream)
-      
     }
 
     .self$field("cigar_labels", renamed)
@@ -257,37 +258,45 @@ Input parameters:
 
   .splitNonIndel = function(ref, cig_labels, rc, match_label = "no variant",
                           mismatch_label = "SNV", cut_site = 17,
-                          upstream = 8, downstream = 5){
+                          upstream = 8, downstream = 6){
 
-  # NOTE: SNVS not called in partial alignments
-  # Only consider mismatches up to (upstream) to the left of the cut and
-  # (downstream) to the right of the cut
-  # The cut site is between cut_site and cut_site + 1
-  upstream = min(cut_site, upstream)
-  downstream = min(downstream, nchar(ref) - cut_site)
-  no_var <- which(cig_labels == match_label & mcols(.self$alns)$seq != ref)
-  if (length(no_var) == 0) return(cig_labels)
-
-  if ((cut_site-upstream + 1) < 0 | (cut_site + downstream) > length(ref)){
-    stop("Specified range for detecting SNVs is greater than target range")
-  }
-
-  snv_range <- c((cut_site-upstream + 1):(cut_site + downstream))
-  sqs <- mcols(.self$alns)$seq[no_var]
-  if (isTRUE(rc)) sqs <- reverseComplement(sqs)
-
-  no_var_seqs <- as.matrix(sqs)
-  no_var_seqs <- no_var_seqs[,snv_range, drop = FALSE]
-
-  rr <- strsplit(as.character(ref[snv_range]), "")[[1]]
-  result <- apply(no_var_seqs, 1, function(x){
-    snvs <- which((x != rr & x != "N")) - upstream - 1
-    snvs[snvs >= 0] <- snvs[snvs >= 0] + 1
-    sprintf("%s:%s", mismatch_label, paste(snvs, collapse = ","))
-  })
-  result[result == sprintf("%s:", mismatch_label)] <- match_label
-  cig_labels[no_var] <- result
-  cig_labels
-  }
+    # NOTE: SNVS not called in partial alignments
+    # Only consider mismatches up to (upstream) to the left of the cut and
+    # (downstream) to the right of the cut
+    # The cut site is between cut_site and cut_site + 1
+    upstream = min(cut_site, upstream)
+    downstream = min(downstream, nchar(ref) - cut_site)
+    
+    is_match <- cig_labels == match_label
+    
+    # If negative strand, rc reference for checking identity
+    # Sequences are later reverse complemented to match the ref
+    test_ref <- ref 
+    if(isTRUE(rc)){ test_ref <- Biostrings::reverseComplement(test_ref)}
+    no_var <- which(is_match & mcols(.self$alns)$seq != test_ref)
+    
+    if (length(no_var) == 0) return(cig_labels)
+  
+    if ((cut_site-upstream + 1) < 0 | (cut_site + downstream) > length(ref)){
+      stop("Specified range for detecting SNVs is greater than target range")
+    }
+  
+    snv_range <- c((cut_site-upstream + 1):(cut_site + downstream))
+    sqs <- mcols(.self$alns)$seq[no_var]
+    if (isTRUE(rc)) sqs <- reverseComplement(sqs)
+  
+    no_var_seqs <- as.matrix(sqs)
+    no_var_seqs <- no_var_seqs[,snv_range, drop = FALSE]
+  
+    rr <- strsplit(as.character(ref[snv_range]), "")[[1]]
+    result <- apply(no_var_seqs, 1, function(x){
+      snvs <- which((x != rr & x != "N")) - upstream - 1
+      snvs[snvs >= 0] <- snvs[snvs >= 0] + 1
+      sprintf("%s:%s", mismatch_label, paste(snvs, collapse = ","))
+    })
+    result[result == sprintf("%s:", mismatch_label)] <- match_label
+    cig_labels[no_var] <- result
+    cig_labels
+    }
 
 )
