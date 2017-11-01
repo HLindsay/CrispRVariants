@@ -1,6 +1,12 @@
 \name{NEWS}
 \title{News for Package \pkg{CrispRVariants}}
 
+\section{Changes in version 1.5.9}{
+   \itemize{
+      \item Minor change to transcript plot \code{plotVariants} to
+      make background white not transparent.
+}
+
 
 \section{Changes in version 1.5.9}{
    \itemize{

@@ -319,6 +319,8 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
             axis.text.y = element_blank(),
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
+            plot.background = element_rect(fill = "white", colour=  NA),
+            panel.background = element_rect(fill = "white", colour = NA),
             panel.spacing = panel.spacing,
             text = element_text(size = gene.text.size),
             axis.ticks.y = element_blank()) +
