@@ -2,10 +2,13 @@
 % Please edit documentation in R/seqsToAln.R
 \name{seqsToAln}
 \alias{seqsToAln}
+\alias{selectAlnRegions}
 \title{Creates a text alignment from a set of cigar strings}
 \usage{
 seqsToAln(cigar, dnaseq, target, del_char = "-", aln_start = NULL,
   reverse_complement = FALSE, allow_partial = FALSE)
+
+selectAlnRegions(alns, reference, target, keep, join = "/ \%s /")
 }
 \arguments{
 \item{cigar}{A list of cigar strings to align}
@@ -24,9 +27,27 @@ used in conjunction with target_start and target_end.}
 
 \item{allow_partial}{Are alignments that do not span the target region allowed?
 (Default: FALSE)}
+
+\item{alns}{Character vector of pairwise alignments, with insertions removed}
+
+\item{reference}{Reference sequence}
+
+\item{keep}{Region to display, relative to the target region, i.e.
+not genomic coords (IRanges or GRanges)}
+
+\item{join}{character(1) String used for joining alignment segments.
+Can accept a placeholder to fill in the number of bases deleted with
+"%s", e.g. the default "/ %s /" will appear as "/ 3 /" if 3 bases are
+deleted}
+
+\item{target}{The complete region spanned by the alignments (GRanges)}
+
+\item{xticks}{Locations for x ticks in plot (Default: NULL)}
 }
 \value{
 The sequences with insertions collapsed and deletions padded
+
+A list of the truncated alignments (alns) and reference (ref)
 }
 \description{
 Creates a one-to-one text alignment of a set of cigar strings with respect
@@ -35,7 +56,14 @@ across deletions.
 
 When genomic coordinates for the alignment start and the target region
 are provided, aligned sequences are cropped to the target region
+
+Given a character vector of pairwise alignments and a
+region to display, trims alignments to the display regions, joined by
+a separator "join".  Alignments should be equal length, e.g.
+created by seqsToAln
 }
 \author{
+Helen Lindsay
+
 Helen Lindsay
 }

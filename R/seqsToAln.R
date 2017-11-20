@@ -110,6 +110,7 @@ selectAlnRegions <- function(alns, reference, target,
 #'@param keep Region to display, relative to the target region, i.e.
 #'not genomic coords (IRanges or GRanges)
 #'@return Gaps between keep (IRanges), or FALSE if no gap ranges found
+#'@rdname selectAlnRegionsHelpers
 .invertKeepRanges <- function(target, keep){
     if (! class(keep) %in% c("IRanges", "GRanges")){
       stop("Ranges to keep should be class IRanges or GRanges")
@@ -140,7 +141,9 @@ selectAlnRegions <- function(alns, reference, target,
 } # -----
 
 # .checkRelativeLocs -----
+#'@title checkRelativeLocs
 #'@description Shift keep to start at 1 if it is within the target
+#'@rdname selectAlnRegionsHelpers
 .checkRelativeLocs <- function(target, keep){
     # Can only check for contained ranges if keep is a GRanges object
     # (Or both are IRanges)
@@ -153,7 +156,7 @@ selectAlnRegions <- function(alns, reference, target,
 } # -----
 
 # .adjustRelativeInsLocs -----
-#'@title .adjustRelativeInsLocs
+#'@title adjustRelativeInsLocs
 #'@description Internal CrispRVariants function for shifting insertion
 #'locations relative to the target region when removing a segment of
 #'the alignments.  Note that this function does not do input checking
@@ -166,6 +169,7 @@ selectAlnRegions <- function(alns, reference, target,
 #'start location.
 #'@param gap_nchars character(n) Number of letters added to join segments 
 #'@return insertion_sites (data.frame) with modified start column
+#'@rdname selectAlnRegionsHelpers
 .adjustRelativeInsLocs <- function(target, keep, starts, gap_nchars){
     if (! length(gap_nchars) == length(keep) -1 ){
       stop("gap_nchars should be the number of characters used\n",
@@ -199,9 +203,9 @@ selectAlnRegions <- function(alns, reference, target,
 #' @param x  A vector of group lengths
 #' @param offset A vector of offset lengths matching x
 #' @author Helen Lindsay
-#' @example 
-#' .offsetIndices(rep(2,5), c(0:4)*10)
-#' @rdname .offsetIndices
+#' @examples 
+#' CrispRVariants:::.offsetIndices(rep(2,5), c(0:4)*10)
+#' @rdname selectAlnRegionsHelpers
 .offsetIndices <- function(x, offset){
   stopifnot(length(offset) == length(x))
   indices <- seq_len(sum(x))

@@ -261,9 +261,9 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'is zero (Default = 5)
 #'@param min.tick.sep numeric(1) Minimum distance between ticks, excluding
 #'boundary ticks.  (Default: 1)
-#'@result A list containing vectors named tick_locs and tick_labs 
+#'@return A list containing vectors named tick_locs and tick_labs 
 #'@author Helen Lindsay
-#'@rdname .getAxisCoords
+#'@rdname getAxisCoords
 .getAxisCoords <- function(locations, labels = NULL, loc.boundaries = NULL,
                            lab.boundaries = c(-1,1), label.at = 5,
                            min.tick.sep = 1){
@@ -324,9 +324,8 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'@param outer vector that will be the first and last elements
 #'@param inner vector that will join elements of outer
 #'@author Helen Lindsay
-#'@example
-#'.intersperse(c(1:10), c(1:9)*10)
-#'@rdname .intersperse
+#'@examples CrispRVariants:::.intersperse(c(1:10), c(1:9)*10)
+#'@rdname intersperse
 .intersperse <- function(outer, inner){
     result <- vector(class(outer), length(c(outer,inner)))
     result[2 * seq_along(outer) - 1] <- outer
