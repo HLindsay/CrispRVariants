@@ -928,6 +928,7 @@ Return value:
   A ggplot2 plot object.  Call "print(obj)" to display
 '
 
+    # Potential improvement: user supplied filter_fun
     # Filter by frequency, count etc
     filter_fun <- .self$.getFilteredCigarTable  
     filter.args <- suppressWarnings(dispatchDots(filter_fun,
@@ -978,11 +979,18 @@ Return value:
       if (isTRUE(.self$pars$rc)){
         target_coords <- rev(target_coords)
       }
-      xbreaks = which(target_coords %% 5 == 0 | abs(target_coords) == 1)
-      target_coords <- target_coords[xbreaks]
+      #xbreaks = which(target_coords %% 5 == 0 | abs(target_coords) == 1)
+      #target_coords <- target_coords[xbreaks]
+      #args <- list(obj = .self$ref, alns = alns, ins.sites = ins.sites,
+      #             xtick.labs = target_coords, xtick.breaks = xbreaks,
+      #             target.loc =  tloc, add.other = add.other)
+      
+      xtcks <- .getAxisCoords(seq_along(target_coords), target_coords)
+      
       args <- list(obj = .self$ref, alns = alns, ins.sites = ins.sites,
-                   xtick.labs = target_coords, xtick.breaks = xbreaks,
-                   target.loc =  tloc, add.other = add.other)
+                  xtick.labs = xtcks$tick_labs, xtick.breaks = xtcks$tick_locs,
+                  target.loc =  tloc, add.other = add.other)
+      
     } else {
       args <- list(obj = .self$ref, alns = alns, ins.sites = ins.sites,
                    target.loc = tloc, add.other = add.other)
@@ -1006,22 +1014,43 @@ Return value:
     if (! isTRUE(create.plot)) return(args)
 
     if (! is.null(plot.regions)){
-      args <- .self$.truncatePlot(args)
+      args <- .self$.truncatePlot(args, plot.regions, target_coords)
+      if (! "plot.text.size" %in% args){ args$plot.text.size <- 3 }
     }
     
     p <- do.call(plotAlignments, args)
     return(p)
   },
 
-  .truncatePlot = function(plot_args){
-      stop("plot truncation for crispr_set not implemented yet")
+  .truncatePlot = function(plot_args, keep, target_coords){
     
-      cig_labels <- lapply(.self$crispr_runs, function(x) x$cigar_labels)
-      lab_to_aln <- match(names(args$alns), cig_labels)
+    trunc_result <- selectAlnRegions(alns = plot_args$alns,
+                                     reference = plot_args$obj,
+                                     target = .self$target,
+                                     keep)
     
-      #all_alns <- .self$crispr_runs[[1]]$alns
-      #cigars <- cigar(all_alns)[lab_to_aln]
-      #starts <- start(all_alns)[lab_to_aln]
+    new_starts <- .adjustRelativeInsLocs(target = .self$target,
+                                         keep = trunc_result$keep,
+                                         starts = plot_args$ins.sites$start,
+                                         trunc_result$nchar_join)
+    
+    lb <- c(start(keep)[2:length(keep)], end(keep)[1:length(keep)-1])
+    keep_tcks <- ! trunc_result$indices == 0
+    xtcks <- .getAxisCoords(trunc_result$indices[keep_tcks],
+                            target_coords[keep_tcks],
+                            loc.boundaries = trunc_result$indices[lb])
+    
+    # To do: fix the box location if it is truncated
+    # xtick locs aren't correct because of addition to sequence
+    
+    plot_args$alns <- trunc_result$alns
+    plot_args$obj <- trunc_result$ref
+    plot_args$ins.sites$start <- new_starts
+    plot_args$xtick.labs <- xtcks$tick_labs
+    plot_args$xtick.breaks <- xtcks$tick_locs
+    
+    # guide.loc, target.loc, pam.start, pam.end
+    plot_args
   },
 
 

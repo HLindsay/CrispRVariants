@@ -1,3 +1,4 @@
+# mergeCrisprSets -----
 #'@title Merge two CrisprSets
 #'@description Merge two CrisprSet objects sharing a reference and target location
 #'@author Helen Lindsay
@@ -75,11 +76,9 @@ setMethod("mergeCrisprSets", signature(x = "CrisprSet", y = "CrisprSet"),
             cset <- CrisprSet(cruns, reference = ref, target = target,
                       names = new_names, target.loc = t.loc)
             cset
-          })
+          }) # -----
 
-
-
-
+# indelCounts -----
 #'@title Count the number of reads containing an insertion or deletion
 #'@description Counts the number of reads containing a deletion or insertion
 #'(indel) of any size in a set of aligned reads.
@@ -202,8 +201,9 @@ setGeneric("indelPercent", function(alns) {
 setMethod("indelPercent", signature("GAlignments"),
           function(alns){
   return((countIndels(alns) / length(alns))*100)
-})
+}) # -----
 
+# dispatchDots -----
 #'@title dispatchDots
 #'@description Update default values for func with values from dot args
 #'@author Helen Lindsay
@@ -237,4 +237,100 @@ dispatchDots <- function(func, ..., call = FALSE){
     result <- utils::modifyList(func_defaults, list(...))[names(func_defaults)]
     if (isTRUE(call)) return(do.call(func, result))
     result
-}
+} # ------
+
+
+# .getAxisCoords -----
+#'@title .getAxisCoords
+#'@description Manually specify x-tick locations and labels,
+#'as sometimes ggplot defaults are too dense. Used internally
+#'by CrispRVariants for creating alignment plot with plotAlignments.
+#'@param locations character(n) Actual x coordinates, or the desired
+#'range of the x coordinates.  If labels are provided, all tick locations
+#'must be in locations and have a matching label.
+#'@param labels character(n) labels for the x axis ticks.  Should be
+#'the same length as locations if provided.  Note that if not all
+#'tick locations are included in locations, it must be possible to
+#'extrapolate labels from locations  (Default: NULL)
+#'@param loc.boundaries numeric(i) Locations that must be included.
+#'(Default: NULL)
+#'@param lab.boundaries numeric(j) Labels that must be included.
+#'(Default: c(-1,1), for showing the cut sites).  Boundaries must
+#'be in labels and have a matching tick location.
+#'@param label.at numeric(1) Add ticks when label modulo label.at
+#'is zero (Default = 5)
+#'@param min.tick.sep numeric(1) Minimum distance between ticks, excluding
+#'boundary ticks.  (Default: 1)
+#'@result A list containing vectors named tick_locs and tick_labs 
+#'@author Helen Lindsay
+#'@rdname .getAxisCoords
+.getAxisCoords <- function(locations, labels = NULL, loc.boundaries = NULL,
+                           lab.boundaries = c(-1,1), label.at = 5,
+                           min.tick.sep = 1){
+    
+    # Potential improvement:
+    # Parameter min.tick.sep for preventing tick labels becoming too close
+    # Parameter loc.at similar to label.at?
+    # label.at if locations are character?
+  
+    input_labels <- labels
+    
+    # Input checks ----
+    # If provided, labels should be the same length as locations
+    if (! is.null(labels)){
+      if (! length(locations) == length(labels)){
+          stop("Length of locations should equal length of labels")
+      }
+    } else{
+      labels <- locations
+    }
+    
+    if (! is.numeric(label.at) | !
+        class(loc.boundaries)  %in% c("numeric", "NULL", "integer")){
+      stop("label.at and loc.boundaries should be numeric")
+    }
+    if (length(label.at) != 1){
+      stop("label.at should be a single, numeric value")
+    }
+    if (! label.at > 0){
+      stop("label.at can not be zero or less than zero")
+    } # -----
+  
+    boundaries <- c(locations[locations %in% loc.boundaries],
+                    locations[labels %in% lab.boundaries])
+
+    tick_locations <- locations
+    close_to_bdry <- outer(locations, boundaries, function(x,y){abs(x-y)})
+    close_to_bdry <- apply(close_to_bdry, 1, min) < min.tick.sep
+       
+    # Select tick locations according to interval, remove ticks
+    # too close to boundaries
+    tick_locations <- tick_locations[labels %% label.at == 0 & ! close_to_bdry]
+    tick_locations <- unique(c(tick_locations, boundaries))
+    tick_locations <- tick_locations[order(tick_locations)]
+  
+    tick_locs_to_labels <- match(tick_locations, locations)
+    tick_labels <- labels[tick_locs_to_labels]
+    
+    return(list(tick_locs = tick_locations, tick_labs = tick_labels))
+  
+} # -----
+
+
+# .intersperse -----
+#'@title .intersperse
+#'@description create a vector of elements in outer interspersed with
+#'elements in inner.  Similar to python zip. No element checking.
+#'@param outer vector that will be the first and last elements
+#'@param inner vector that will join elements of outer
+#'@author Helen Lindsay
+#'@example
+#'.intersperse(c(1:10), c(1:9)*10)
+#'@rdname .intersperse
+.intersperse <- function(outer, inner){
+    result <- vector(class(outer), length(c(outer,inner)))
+    result[2 * seq_along(outer) - 1] <- outer
+    result[2 * seq_along(inner)] <- inner
+    result
+} # -----
+

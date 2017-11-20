@@ -1,3 +1,4 @@
+# plotAlignments generic -----
 #'@title Plot alignments with respect to a reference sequence
 #'@rdname plotAlignments
 #'@param obj The object to be plotted
@@ -8,7 +9,9 @@
 #'@export
 setGeneric("plotAlignments", function(obj, ...) {
   standardGeneric("plotAlignments")})
+# -----
 
+# plotAlignments CrisprSet -----
 #'@rdname plotAlignments
 #'@description (signature("CrisprSet")) Wrapper for CrisprSet$plotVariants.
 #'Optionally filters a CrisprSet frequency table, then plots variants.
@@ -42,9 +45,10 @@ setMethod("plotAlignments", signature("CrisprSet"),
                                          create.plot = create.plot, ...)
 
             return(plot_obj)
-          })
+          }) # -----
 
 
+# plotAlignments character -----
 #'@title Plots pairwise alignments
 #'@description (signature("DNAString"))  Plots a set of pairwise alignments to a reference sequence.
 #'Alignments should all be the same length as the reference sequences.
@@ -276,8 +280,9 @@ setMethod("plotAlignments", signature("character"),
     print(p)
   }
   p
-})
+}) # -----
 
+# plotAlignments DNAString -----
 #'@rdname plotAlignments
 setMethod("plotAlignments", signature("DNAString"),
     function(obj, ..., alns, ins.sites, highlight.pam = TRUE, show.plot = FALSE,
@@ -307,8 +312,9 @@ setMethod("plotAlignments", signature("DNAString"),
            legend.symbol.size = legend.symbol.size, add.other = add.other,
            codon.frame = codon.frame, ...)
 
-})
+}) # -----
 
+# addCodonFrame -----
 #'@title Internal CrispRVariants function for indicating codon frame on an
 #'alignment tile plot 
 #'@description Adds vertical dotted lines in intervals of three nucleotides.
@@ -326,9 +332,9 @@ addCodonFrame <- function(p, width, codon.frame){
     p <- p + geom_vline(xintercept = codon_locs - 0.5, 
                linetype = "dotted", color = "lightslategray", size = 0.5)
     p
-}
+} # -----
 
-
+# transformAlnsToLong -----
 #'@title Transform data for plotting
 #'@description Orders and transforms a reference sequence and a set of aligned sequences
 #'into long format, i.e. one observation (tile position) per row.  Used internally by
@@ -358,9 +364,9 @@ transformAlnsToLong <- function(ref, alns, add.other = FALSE){
   m <- reshape2::melt(temp)
 
   m
-}
+} # -----
 
-
+# setDNATileColours -----
 #'@title Sets colours for plotting aligned DNA sequences.
 #'@description Sets tile colours for \code{\link[CrispRVariants]{plotAlignments}} with a
 #'DNA alphabet.  Colour names must be valid.
@@ -385,9 +391,9 @@ setDNATileColours <- function(m){
   m$cols <- m_cols[m$value]
   m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
   return(m)
-}
+} # -----
 
-
+# makeAlignmentTilePlot -----
 #'@title Internal CrispRVariants function for creating the plotAlignments background
 #'@description Takes a matrix of characters, x and y locations and colours, creates
 #'a ggplot geom_tile plot with tiles labelled by the characters.
@@ -438,4 +444,4 @@ makeAlignmentTilePlot <- function(m, ref, xlab, plot.text.size, axis.text.size,
 
     }
     return(p)
-}
+} # -----

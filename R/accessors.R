@@ -1,3 +1,4 @@
+# variantCounts -----
 #'@title Get variant counts
 #'@description Returns a matrix of counts where rows are sequence variants an columns
 #' are samples
@@ -44,9 +45,10 @@ setMethod("variantCounts", signature("CrisprSet"),
       result <- obj$filterVariants(cig_freqs = result, names = filter.vars)
     }
     result
-})
+}) # -----
 
 
+# mutationEfficiency -----
 #'@title Get mutation efficiency
 #'@description  Returns the percentage of sequences that contain at least
 #' one mutation.
@@ -89,9 +91,10 @@ setMethod("mutationEfficiency", signature("CrisprSet"),
                                   filter.cols = filter.cols,
                                   group = group, ...)
     result
-})
+}) # -----
 
 
+# findSNVs -----
 #'@title Find frequent SNVs
 #'@description Find single nucleotide variants (SNVs) above a specified frequency
 #'in a table of variants.
@@ -114,7 +117,7 @@ setMethod("findSNVs", signature("CrisprSet"),
             result <- obj$.getSNVs(min.freq = freq,
                                   include.chimeras = include.chimeras)
             result
-          })
+          }) # -----
 
 
 #'@title Get chimeric alignments
@@ -142,7 +145,7 @@ setMethod("getChimeras", signature("CrisprSet"),
           })
 
 
-
+# consensusSeqs -----
 #'@title Get consensus sequences for variant alleles
 #'@description Return consensus sequences of variant alleles.  At
 #'present, chimeric alignments are not included.
@@ -177,9 +180,9 @@ setMethod("consensusSeqs", signature("CrisprSet"),
 
             obj$consensusAlleles(cig_freqs)
 
-})
+}) # -----
 
-
+# alns -----
 #'@title Get alignments
 #'@description Return alignments from an object that contains them.
 #'For a CrisprSet object, these are truncated, non-chimeric alignments 
@@ -200,4 +203,4 @@ setMethod("alns", signature("CrisprSet"),
           function(obj, ...){
             alns <- lapply(obj$crispr_runs, function(x) x$alns)
             GAlignmentsList(alns)
-          })
+          }) # -----

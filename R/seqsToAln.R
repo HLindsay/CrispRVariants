@@ -1,3 +1,4 @@
+# seqsToAln -----
 #' @title Creates a text alignment from a set of cigar strings
 #'@description Creates a one-to-one text alignment of a set of cigar strings with respect
 #'to the reference sequence by collapsing insertions and introducing gaps
@@ -44,64 +45,168 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
     result <- as.character(result)
     result <- gsub("\\.", "<", gsub("\\+", ">", result))
     result
-}
+} # ------
 
-
-#'@title seqsToPartialAln
+# selectAlnRegions ------
+#'@title selectAlnRegions
 #'@description Given a character vector of pairwise alignments and a
-#' region to display, trims alignments to the display region
+#' region to display, trims alignments to the display regions, joined by
+#' a separator "join".  Alignments should be equal length, e.g.
+#' created by seqsToAln
 #'@author Helen Lindsay
-#'@param cigars cigar strings corresponding to alignments
-#'@param starts Genomic start coordinates of the alignments
 #'@param alns Character vector of pairwise alignments, with insertions removed
 #'@param reference Reference sequence
 #'@param target The complete region spanned by the alignments (GRanges)
-#'@param keep Region to display (IRanges or GRanges)
-#'@param xbreaks Mapping between coordinates and plot locations.
-#'  If supplied, plot locations are adjusted for gaos (Default: NULL)
+#'@param keep Region to display, relative to the target region, i.e.
+#'not genomic coords (IRanges or GRanges)
+#'@param join character(1) String used for joining alignment segments.
+#'Can accept a placeholder to fill in the number of bases deleted with
+#'"%s", e.g. the default "/ %s /" will appear as "/ 3 /" if 3 bases are
+#'deleted
 #'@param xticks Locations for x ticks in plot (Default: NULL)
 #'@return A list of the truncated alignments (alns) and reference (ref)
-seqsToPartialAln <- function(cigars, starts, alns, reference, target,
-                          keep, xbreaks = NULL, xticks = NULL){
+#'@rdname seqsToAln
+selectAlnRegions <- function(alns, reference, target,
+                             keep, join = "/ %s /"){
 
-    # Get the region to delete
-    if (class(keep) == "GRanges") keep <- ranges(keep)
-    to_delete <- Biostrings::gaps(keep, start = start(target), end = end(target))
-
-    # Find the operations that overlap the region to be removed
-    # Future - choose a region to display, presently just checking for I
-    rr <- cigarRangesAlongReferenceSpace(cigars,
-                with.ops = TRUE, ops = c("D","I"))
-    rr <- unlist(rr)
+    # Potential changes:
+    # record how many bases deleted from each allele
+    # (e.g. to make clear if deleted region was a gap or an insertion)
+  
+    # make keep relative to target if not already
+    keep <- .checkRelativeLocs(target, keep)
+    to_delete <- .invertKeepRanges(target, keep)
+    if (! class(to_delete) == "IRanges") return()
     
-    # Insertions locations will need to be shifted to match the deleted
-    # segments, this isn't implemented yet
-    if ("I" %in% names(rr)){
-        stop("Displaying partial alignments containing insertions is not
-             implemented yet")
-    }
+    result <- extractAt(as(alns, "XStringSet"), keep)
+    ref_result <- extractAt(as(reference, "XString"), keep)    
+
+    ndeleted <- width(to_delete)
+    ref_paste <- sprintf(join, ndeleted)    
+    aln_paste <- sprintf(join, paste(rep(".", nchar(ndeleted)), collapse = ""))
+    nadded <- nchar(ref_paste)
     
-    qkeep <- shift(keep, 1-start(target))
-    result <- extractAt(as(alns, "XStringSet"), qkeep)
-    ref_result <- extractAt(as(ref, "XString"), qkeep)    
-
-    ndeleted <- width(Biostrings::gaps(keep))
-    if (length(ndeleted) > 1) {
-        stop("Displaying more than two segments is not implemented yet")
-    }
-
-    ref_paste <- sprintf("/ %s /", ndeleted)    
-    aln_paste <- sprintf("/ %s /", paste(rep(".", nchar(ndeleted)), collapse = ""))
+    # Get new indices for the alignment characters kept
+    keep_idxs <- coverage(keep, width = width(target))
+    offset_idxs <- .offsetIndices(nchar(ref_result), c(0, nadded))
+    keep_idxs[keep_idxs == 1] <- offset_idxs
+    keep_idxs <- as.numeric(keep_idxs)
     
     aln_result <- lapply(result, base::paste, collapse = aln_paste)
     ref_result <- paste(ref_result, collapse = ref_paste)
     alns <- as.character(aln_result)
     names(alns) <- names(aln_result)    
+    
+    return(list(alns = alns, ref = ref_result, keep = keep,
+                nchar_join = nchar(ref_paste), indices = keep_idxs))
+} # ------
 
-    if (! is.null(xbreaks)){
-        
+# .invertKeepRanges -----
+#'@title .invertKeepRanges
+#'@description Internal CrispRVariants function used by seqsToPartialAlns
+#'for checking arguments and getting region to delete.  Returns FALSE
+#'if no region to delete found, or region to be deleted is entire target.
+#'@param target The complete region spanned by the alignments (GRanges)
+#'@param keep Region to display, relative to the target region, i.e.
+#'not genomic coords (IRanges or GRanges)
+#'@return Gaps between keep (IRanges), or FALSE if no gap ranges found
+.invertKeepRanges <- function(target, keep){
+    if (! class(keep) %in% c("IRanges", "GRanges")){
+      stop("Ranges to keep should be class IRanges or GRanges")
     }
+    
+    # Get the region to delete
+    keepr <- keep
+    if (class(keep) == "GRanges") keepr <- ranges(keep)
+    to_delete <- Biostrings::gaps(keepr, start = 1, end = width(target))
+    
+    # If the region to be deleted is the target region,
+    # check if it's in genomic coordinates
+    if (identical(to_delete, IRanges(1, width(target)))){
+      # Check if all regions to keep are contained within target
+      warning("Region to delete is identical to the target region, \n",
+              "or was of class IRanges and could not be shifted\n",
+              "to relative coordinates. Returning")
+      return(FALSE) 
+    }
+    
+    # If there is nothing to delete, warn and return
+    if (length(to_delete) == 0){
+      warning("Nothing to delete.  Returning")
+      return(FALSE)
+    } 
+    
+    return(to_delete)
+} # -----
 
-    return(list(alns = alns, ref = ref_result))
-}
+# .checkRelativeLocs -----
+#'@description Shift keep to start at 1 if it is within the target
+.checkRelativeLocs <- function(target, keep){
+    # Can only check for contained ranges if keep is a GRanges object
+    # (Or both are IRanges)
+    if (! (class(keep) == "GRanges" & class(target) == "GRanges")) return(keep)
+    ovs <- queryHits(findOverlaps(keep, target, type = "within"))
+    if (length(setdiff(ovs, seq_along(keep))) == 0){
+      keep <- shift(keep, 1-start(target))
+    }
+    ranges(keep)
+} # -----
+
+# .adjustRelativeInsLocs -----
+#'@title .adjustRelativeInsLocs
+#'@description Internal CrispRVariants function for shifting insertion
+#'locations relative to the target region when removing a segment of
+#'the alignments.  Note that this function does not do input checking
+#'but assumes this has been done upstream. Insertions at the left border
+#'of a gap region are removed.
+#'@param target The counting region
+#'@param keep IRanges(n) The regions to show in a plot
+#'@param starts numeric(n) Insertion locations. When plotting,
+#'the insertion symbol appears at the left border of the
+#'start location.
+#'@param gap_nchars character(n) Number of letters added to join segments 
+#'@return insertion_sites (data.frame) with modified start column
+.adjustRelativeInsLocs <- function(target, keep, starts, gap_nchars){
+    if (! length(gap_nchars) == length(keep) -1 ){
+      stop("gap_nchars should be the number of characters used\n",
+           "to separate segments in keep when creating alignments.\n",
+           "length(gap_nchars) should be one less than length(keep)")  
+    }
+    # As the insertion is placed at the leftmost border of a nucleotide,
+    # it is still possible to display insertions at the left border of
+    # the region(s) to remove
+    not_rightmost <- ! end(keep) == width(target)
+    end(keep[not_rightmost]) <- end(keep)[not_rightmost] + 1
+    keep_cov <- as.logical(coverage(keep, width = width(target)))
+    new_idxs <- rep(NA, length(keep_cov))
+    new_idxs[keep_cov] <- seq_along(which(keep_cov))
+    new_starts <- new_idxs[starts]
+    
+    # Offset the new insertion locations by the number of bases
+    # added when joining sequences
+    gap_nchars <- c(0, gap_nchars)
+    all_offsets <- rep(gap_nchars, width(keep))
+    to_display <- ! is.na(new_starts)
+    new_starts[to_display] <- new_starts[to_display] + all_offsets[new_starts[to_display]] 
+    new_starts
+    
+} # -----
+
+# .offsetIndices -----
+#' @title .offsetIndices
+#' @description Get indices of a vector grouped by "x",
+#' cumulatively adding offsets to each group according to "offset"
+#' @param x  A vector of group lengths
+#' @param offset A vector of offset lengths matching x
+#' @author Helen Lindsay
+#' @example 
+#' .offsetIndices(rep(2,5), c(0:4)*10)
+#' @rdname .offsetIndices
+.offsetIndices <- function(x, offset){
+  stopifnot(length(offset) == length(x))
+  indices <- seq_len(sum(x))
+  indices <- indices + rep(cumsum(offset), x)
+  indices
+} 
+# -----
 

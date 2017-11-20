@@ -1,12 +1,13 @@
 context("Test alignment plot")
 
-
+# Setup data for testing plotAlignments -----
 data("gol_clutch1")
 
 ref_only <- plotAlignments(Biostrings::DNAString("AACCTTGG"), alns = NULL,
                   ins.sites = data.frame())
 
 crispr_plot <- plotAlignments(gol)
+# -----
 
 test_that("plotAlignments returns a ggplot object", {
     # plotAlignments should produce a ggplot that has layers
@@ -21,4 +22,3 @@ test_that("plotAlignments returns a ggplot object", {
     expect_identical(as.character(ref_only$data$value), 
                      strsplit("AACCTTGG", "")[[1]])
 })
-
