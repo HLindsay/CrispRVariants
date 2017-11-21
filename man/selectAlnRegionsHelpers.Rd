@@ -5,7 +5,7 @@
 \alias{.checkRelativeLocs}
 \alias{.adjustRelativeInsLocs}
 \alias{.offsetIndices}
-\title{.invertKeepRanges}
+\title{Helper functions for selectAlnRegions}
 \usage{
 .invertKeepRanges(target, keep)
 
@@ -41,19 +41,21 @@ Gaps between keep (IRanges), or FALSE if no gap ranges found
 insertion_sites (data.frame) with modified start column
 }
 \description{
-Internal CrispRVariants function used by seqsToPartialAlns
-for checking arguments and getting region to delete.  Returns FALSE
-if no region to delete found, or region to be deleted is entire target.
+(.invertKeepRanges) Internal CrispRVariants function used
+by seqsToPartialAlns for checking arguments and getting region to delete.
+Returns FALSE if no region to delete found, or region to be deleted is
+entire target.
 
-Shift keep to start at 1 if it is within the target
+(.checkRelativeLocs) Shift keep to start at 1 if it is
+within the target
 
-Internal CrispRVariants function for shifting insertion
-locations relative to the target region when removing a segment of
-the alignments.  Note that this function does not do input checking
-but assumes this has been done upstream. Insertions at the left border
-of a gap region are removed.
+(.adjustRelativeInsLocs) Internal CrispRVariants function
+for shifting insertion locations relative to the target region when
+removing a segment of the alignments.  Note that this function does not
+do input checking but assumes this has been done upstream. Insertions at
+the left border of a gap region are removed.
 
-Get indices of a vector grouped by "x",
+(.offsetIndices) Get indices of a vector grouped by "x",
 cumulatively adding offsets to each group according to "offset"
 }
 \examples{

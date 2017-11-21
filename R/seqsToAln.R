@@ -102,10 +102,11 @@ selectAlnRegions <- function(alns, reference, target,
 } # ------
 
 # .invertKeepRanges -----
-#'@title .invertKeepRanges
-#'@description Internal CrispRVariants function used by seqsToPartialAlns
-#'for checking arguments and getting region to delete.  Returns FALSE
-#'if no region to delete found, or region to be deleted is entire target.
+#'@title Helper functions for selectAlnRegions
+#'@description (.invertKeepRanges) Internal CrispRVariants function used
+#'by seqsToPartialAlns for checking arguments and getting region to delete.
+#'Returns FALSE if no region to delete found, or region to be deleted is
+#'entire target.
 #'@param target The complete region spanned by the alignments (GRanges)
 #'@param keep Region to display, relative to the target region, i.e.
 #'not genomic coords (IRanges or GRanges)
@@ -141,8 +142,8 @@ selectAlnRegions <- function(alns, reference, target,
 } # -----
 
 # .checkRelativeLocs -----
-#'@title checkRelativeLocs
-#'@description Shift keep to start at 1 if it is within the target
+#'@description (.checkRelativeLocs) Shift keep to start at 1 if it is
+#'within the target
 #'@rdname selectAlnRegionsHelpers
 .checkRelativeLocs <- function(target, keep){
     # Can only check for contained ranges if keep is a GRanges object
@@ -156,12 +157,11 @@ selectAlnRegions <- function(alns, reference, target,
 } # -----
 
 # .adjustRelativeInsLocs -----
-#'@title adjustRelativeInsLocs
-#'@description Internal CrispRVariants function for shifting insertion
-#'locations relative to the target region when removing a segment of
-#'the alignments.  Note that this function does not do input checking
-#'but assumes this has been done upstream. Insertions at the left border
-#'of a gap region are removed.
+#'@description (.adjustRelativeInsLocs) Internal CrispRVariants function
+#'for shifting insertion locations relative to the target region when
+#'removing a segment of the alignments.  Note that this function does not
+#'do input checking but assumes this has been done upstream. Insertions at
+#'the left border of a gap region are removed.
 #'@param target The counting region
 #'@param keep IRanges(n) The regions to show in a plot
 #'@param starts numeric(n) Insertion locations. When plotting,
@@ -197,8 +197,7 @@ selectAlnRegions <- function(alns, reference, target,
 } # -----
 
 # .offsetIndices -----
-#' @title .offsetIndices
-#' @description Get indices of a vector grouped by "x",
+#' @description (.offsetIndices) Get indices of a vector grouped by "x",
 #' cumulatively adding offsets to each group according to "offset"
 #' @param x  A vector of group lengths
 #' @param offset A vector of offset lengths matching x
