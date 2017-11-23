@@ -1011,12 +1011,13 @@ Return value:
     }
 
     args <- modifyList(args, dots)
-    if (! isTRUE(create.plot)) return(args)
 
     if (! is.null(plot.regions)){
       args <- .self$.truncatePlot(args, plot.regions, target_coords)
       if (! "plot.text.size" %in% args){ args$plot.text.size <- 3 }
     }
+    
+    if (! isTRUE(create.plot)) return(args)
     
     p <- do.call(plotAlignments, args)
     return(p)

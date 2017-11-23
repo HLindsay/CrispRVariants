@@ -96,7 +96,7 @@ selectAlnRegions <- function(alns, reference, target,
       seg_joins[1,] <- ""
     } 
     if (isTRUE(del_right) & ! isTRUE(border.gaps)){
-      seg_joins[nrow(seg_joins)] <- ""  
+      seg_joins[nrow(seg_joins),] <- ""
     }
     if (! isTRUE(del_left)){ seg_joins <- rbind("", seg_joins) }
     if (! isTRUE(del_right)){ seg_joins <- rbind(seg_joins, "") }
