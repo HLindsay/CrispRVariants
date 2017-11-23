@@ -8,7 +8,8 @@
 seqsToAln(cigar, dnaseq, target, del_char = "-", aln_start = NULL,
   reverse_complement = FALSE, allow_partial = FALSE)
 
-selectAlnRegions(alns, reference, target, keep, join = "/ \%s /")
+selectAlnRegions(alns, reference, target, keep, join = "/ \%s /",
+  border.gaps = FALSE)
 }
 \arguments{
 \item{cigar}{A list of cigar strings to align}
@@ -40,9 +41,8 @@ Can accept a placeholder to fill in the number of bases deleted with
 "%s", e.g. the default "/ %s /" will appear as "/ 3 /" if 3 bases are
 deleted}
 
-\item{target}{The complete region spanned by the alignments (GRanges)}
-
-\item{xticks}{Locations for x ticks in plot (Default: NULL)}
+\item{border.gaps}{(logical(1)) Should bases deleted from the borders
+be shown?  (Default: FALSE)}
 }
 \value{
 The sequences with insertions collapsed and deletions padded

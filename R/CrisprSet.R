@@ -1023,6 +1023,8 @@ Return value:
   },
 
   .truncatePlot = function(plot_args, keep, target_coords){
+    # To do: fix the box location if it is truncated
+
     
     trunc_result <- selectAlnRegions(alns = plot_args$alns,
                                      reference = plot_args$obj,
@@ -1040,9 +1042,7 @@ Return value:
                             target_coords[keep_tcks],
                             loc.boundaries = trunc_result$indices[lb])
     
-    # To do: fix the box location if it is truncated
-    # xtick locs aren't correct because of addition to sequence
-    
+     
     plot_args$alns <- trunc_result$alns
     plot_args$obj <- trunc_result$ref
     plot_args$ins.sites$start <- new_starts

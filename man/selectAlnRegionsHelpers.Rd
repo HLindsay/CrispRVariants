@@ -25,15 +25,13 @@ not genomic coords (IRanges or GRanges)}
 the insertion symbol appears at the left border of the
 start location.}
 
-\item{gap_nchars}{character(n) Number of letters added to join segments}
+\item{gap_nchars}{character(n) Number of letters added to when joining
+segments before each region in keep.  If first base of keep is 1,
+the first entry of gap_nchars should be 0.}
 
 \item{x}{A vector of group lengths}
 
 \item{offset}{A vector of offset lengths matching x}
-
-\item{target}{The counting region}
-
-\item{keep}{IRanges(n) The regions to show in a plot}
 }
 \value{
 Gaps between keep (IRanges), or FALSE if no gap ranges found

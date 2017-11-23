@@ -27,8 +27,16 @@ keep_wrt_target <- GRanges(18, IRanges(start = c(4647372, 4647396),
                                        end = c(4647392,4647404)))
 
 target <- gol$target
+
 keep <- IRanges(start = c(1,25), end = c(21,33))
-# -----
+# Delete characters at the start
+keep_l <- IRanges(start = c(5,25), end = c(21,33))
+# Delete characters at the end
+keep_r <- IRanges(start = c(1,25), end = c(21,30))
+# Delete characters at both ends
+keep_b <- IRanges(start = c(5,25), end = c(21,30))
+
+#-----
 
 
 test_that("selectAlnRegions converts GRanges if possible", {
@@ -43,7 +51,7 @@ test_that("selectAlnRegions converts GRanges if possible", {
 
 test_that("Insertions on the left boundary of a gap are retained", {
     original_ins <- gol$insertion_sites$start
-    result <- .adjustRelativeInsLocs(gol$target, keep, original_ins, 5)
+    result <- .adjustRelativeInsLocs(gol$target, keep, original_ins, c(0,5))
     expect_equal(length(result), length(original_ins))
     
     # Check insertions at first gap base pos 22 are kept 
@@ -53,18 +61,37 @@ test_that("Insertions on the left boundary of a gap are retained", {
     expect_true(all(is.na(result[original_ins == 24])))
 })
 
-test_that("selectAlnRegions correctly joins segments", {
+test_that("selectAlnRegions correctly joins multiple segments", {
+    select_args <- list(alns = aln_seqs[1:10], reference = gol$ref,
+                        target = gol$target, join = " del %s bp ")
   
-  selectAlnRegions(alns = aln_seqs[1:10],
-                   reference = gol$ref,
-                   target = gol$target,
-                   keep = keep,
-                   join = " del %s bp ")
-})
-
-test_that("selectAlnRegions works correctly with multiple joins", {
-        
-  
+    run_selectRegions <- function(keep){
+       do.call(selectAlnRegions,
+               modifyList(select_args, list(keep = keep)))
+    }
+    
+    result <- run_selectRegions(keep)
+    result_l <- run_selectRegions(keep_l)
+    result_r <- run_selectRegions(keep_r)
+    result_b <- run_selectRegions(keep_b)
+    # Same thing allowing gaps at borders
+    select_args["border.gaps"] <- TRUE
+    result_bd <- run_selectRegions(keep)
+    result_lbd <- run_selectRegions(keep_l)
+    result_rbd <- run_selectRegions(keep_r)
+    result_bbd <- run_selectRegions(keep_b)
+    
+    expect_equal(result$ref, "GTCTTGGTCTCTCGCAGGATG del 3 bp CTGGAGCCA")
+    expect_equal(result_l$ref, "TGGTCTCTCGCAGGATG del 3 bp CTGGAGCCA" )
+    expect_equal(result_r$ref, "GTCTTGGTCTCTCGCAGGATG del 3 bp CTGGAG")
+    expect_equal(result_b$ref, "TGGTCTCTCGCAGGATG del 3 bp CTGGAG")
+    expect_equal(result_bd$ref, "GTCTTGGTCTCTCGCAGGATG del 3 bp CTGGAGCCA")
+    expect_equal(result_lbd$ref,
+                 " del 4 bp TGGTCTCTCGCAGGATG del 3 bp CTGGAGCCA")
+    expect_equal(result_rbd$ref,
+                 "GTCTTGGTCTCTCGCAGGATG del 3 bp CTGGAG del 3 bp ")
+    expect_equal(result_bbd$ref,
+                 " del 4 bp TGGTCTCTCGCAGGATG del 3 bp CTGGAG del 3 bp ")
 })
 
 

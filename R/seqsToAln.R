@@ -56,18 +56,19 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
 #'@author Helen Lindsay
 #'@param alns Character vector of pairwise alignments, with insertions removed
 #'@param reference Reference sequence
-#'@param target The complete region spanned by the alignments (GRanges)
 #'@param keep Region to display, relative to the target region, i.e.
 #'not genomic coords (IRanges or GRanges)
 #'@param join character(1) String used for joining alignment segments.
 #'Can accept a placeholder to fill in the number of bases deleted with
 #'"%s", e.g. the default "/ %s /" will appear as "/ 3 /" if 3 bases are
 #'deleted
-#'@param xticks Locations for x ticks in plot (Default: NULL)
+#'@param border.gaps (logical(1)) Should bases deleted from the borders
+#'be shown?  (Default: FALSE)
 #'@return A list of the truncated alignments (alns) and reference (ref)
 #'@rdname seqsToAln
 selectAlnRegions <- function(alns, reference, target,
-                             keep, join = "/ %s /"){
+                             keep, join = "/ %s /",
+                             border.gaps = FALSE){
 
     # Potential changes:
     # record how many bases deleted from each allele
@@ -78,27 +79,48 @@ selectAlnRegions <- function(alns, reference, target,
     to_delete <- .invertKeepRanges(target, keep)
     if (! class(to_delete) == "IRanges") return()
     
-    result <- extractAt(as(alns, "XStringSet"), keep)
-    ref_result <- extractAt(as(reference, "XString"), keep)    
+    result <- Biostrings::extractAt(as(alns, "XStringSet"), keep)
+    ref_result <- Biostrings::extractAt(as(reference, "XString"), keep)    
 
     ndeleted <- width(to_delete)
     ref_paste <- sprintf(join, ndeleted)    
-    aln_paste <- sprintf(join, paste(rep(".", nchar(ndeleted)), collapse = ""))
-    nadded <- nchar(ref_paste)
+    aln_paste <- sprintf(join, strrep(".", nchar(ndeleted)))
+    seg_joins <- matrix(c(ref_paste, aln_paste), ncol = 2)
     
-    # Get new indices for the alignment characters kept
+    # Adjust to show or hide operations at the borders 
+    del_left <- min(start(keep)) > min(start(to_delete))
+    del_right <- max(end(keep)) < max(end(to_delete))
+
+    if (isTRUE(del_left) & ! isTRUE(border.gaps)){
+      # The first gap is not included in the displayed plot
+      seg_joins[1,] <- ""
+    } 
+    if (isTRUE(del_right) & ! isTRUE(border.gaps)){
+      seg_joins[nrow(seg_joins)] <- ""  
+    }
+    if (! isTRUE(del_left)){ seg_joins <- rbind("", seg_joins) }
+    if (! isTRUE(del_right)){ seg_joins <- rbind(seg_joins, "") }
+    
+    # Offsets refer to number of characters added into plot
+    offsets <- nchar(seg_joins[1:length(keep),1])
+    
     keep_idxs <- coverage(keep, width = width(target))
-    offset_idxs <- .offsetIndices(nchar(ref_result), c(0, nadded))
+    offset_idxs <- .offsetIndices(nchar(ref_result), offsets)
     keep_idxs[keep_idxs == 1] <- offset_idxs
     keep_idxs <- as.numeric(keep_idxs)
     
-    aln_result <- lapply(result, base::paste, collapse = aln_paste)
-    ref_result <- paste(ref_result, collapse = ref_paste)
-    alns <- as.character(aln_result)
-    names(alns) <- names(aln_result)    
+    # Joins include border elements, empty if border.gaps = FALSE
+    paste_segs <- function(joins, segs){
+       paste(.intersperse(joins, segs), collapse = "")
+    }
     
-    return(list(alns = alns, ref = ref_result, keep = keep,
-                nchar_join = nchar(ref_paste), indices = keep_idxs))
+    ref_return <- paste_segs(seg_joins[,1], as.character(ref_result))
+    aln_return <- unlist(lapply(result, function(x){ 
+      paste_segs(seg_joins[,2], as.character(x))
+    })) 
+    
+    return(list(alns = aln_return, ref = ref_return, keep = keep,
+                nchar_join = offsets, indices = keep_idxs))
 } # ------
 
 # .invertKeepRanges -----
@@ -162,20 +184,24 @@ selectAlnRegions <- function(alns, reference, target,
 #'removing a segment of the alignments.  Note that this function does not
 #'do input checking but assumes this has been done upstream. Insertions at
 #'the left border of a gap region are removed.
-#'@param target The counting region
-#'@param keep IRanges(n) The regions to show in a plot
 #'@param starts numeric(n) Insertion locations. When plotting,
 #'the insertion symbol appears at the left border of the
 #'start location.
-#'@param gap_nchars character(n) Number of letters added to join segments 
+#'@param gap_nchars character(n) Number of letters added to when joining
+#'segments before each region in keep.  If first base of keep is 1,
+#'the first entry of gap_nchars should be 0.
 #'@return insertion_sites (data.frame) with modified start column
 #'@rdname selectAlnRegionsHelpers
 .adjustRelativeInsLocs <- function(target, keep, starts, gap_nchars){
-    if (! length(gap_nchars) == length(keep) -1 ){
+    if ( length(gap_nchars) > length(keep) + 2 ){
+      # Can be at most 2 more gaps than kept (boundaries)
       stop("gap_nchars should be the number of characters used\n",
            "to separate segments in keep when creating alignments.\n",
-           "length(gap_nchars) should be one less than length(keep)")  
+           "length(gap_nchars) should be at most two more than length(keep)") 
     }
+    # This is the same as the indices in selectAlnRegions except that
+    # left borders of gaps are included. 
+  
     # As the insertion is placed at the leftmost border of a nucleotide,
     # it is still possible to display insertions at the left border of
     # the region(s) to remove
@@ -188,7 +214,6 @@ selectAlnRegions <- function(alns, reference, target,
     
     # Offset the new insertion locations by the number of bases
     # added when joining sequences
-    gap_nchars <- c(0, gap_nchars)
     all_offsets <- rep(gap_nchars, width(keep))
     to_display <- ! is.na(new_starts)
     new_starts[to_display] <- new_starts[to_display] + all_offsets[new_starts[to_display]] 
@@ -206,10 +231,9 @@ selectAlnRegions <- function(alns, reference, target,
 #' CrispRVariants:::.offsetIndices(rep(2,5), c(0:4)*10)
 #' @rdname selectAlnRegionsHelpers
 .offsetIndices <- function(x, offset){
-  stopifnot(length(offset) == length(x))
+  stopifnot(length(x) == length(offset))
   indices <- seq_len(sum(x))
   indices <- indices + rep(cumsum(offset), x)
   indices
-} 
-# -----
+} # -----
 

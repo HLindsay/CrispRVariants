@@ -2,12 +2,21 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.2}{
+   \itemize{
+      \item Allowing plotting arbitrarily many subsets of
+      aligned regions
+  }
+}
+
+
 \section{Changes in version 1.7.1}{
    \itemize{
       \item Reorganising \code{plotAlignments} code for allowing
       plotting subsets of the aligned regions.  
       \item Minor change to transcript plot \code{plotVariants} to
       make background white not transparent.
+  }
 }
 
 
