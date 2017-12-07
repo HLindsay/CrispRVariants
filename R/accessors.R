@@ -120,6 +120,7 @@ setMethod("findSNVs", signature("CrisprSet"),
           }) # -----
 
 
+# getChimeras -----
 #'@title Get chimeric alignments
 #'@description Return chimeric alignments from a collection of aligned sequences
 #'@param obj An object containing aligned sequences
@@ -142,7 +143,7 @@ setMethod("getChimeras", signature("CrisprSet"),
               stop("This function accepts a single sample name or index")
             }
             obj$crispr_runs[[sample]]$chimeras
-          })
+          }) # -----
 
 
 # consensusSeqs -----
@@ -204,3 +205,35 @@ setMethod("alns", signature("CrisprSet"),
             alns <- lapply(obj$crispr_runs, function(x) x$alns)
             GAlignmentsList(alns)
           }) # -----
+
+
+# alleles -----
+#'@title Get allele names 
+#'@description Function to access allele names 
+#'@param obj An object containing variant alleles
+#'@param ... additional arguments
+#'@author Helen Lindsay
+#'@rdname alleles
+#'@export
+setGeneric("alleles", function(obj, ...) {
+  standardGeneric("alleles")})
+
+#'@rdname alleles
+#'@return A data frame relating CIGAR strings to variant labels
+#'@examples
+#'data("gol_clutch1")
+#'alleles <- alleles(gol)
+setMethod("alleles", signature("CrisprSet"),
+          function(obj, ...){
+            # To do:
+            # Store unique labels and CIGAR strings  to avoid lapply
+            
+            alns <- unlist(unname(alns(obj)))
+            cigars <- GenomicAlignments::cigar(alns)
+            labels <- unlist(unname(lapply(obj$crispr_runs,
+                                           "[[", "cigar_labels")))
+            result <- data.frame(label = labels, cigar = cigars,
+                                 genomic.loc = start(alns))
+            result <- unique(result)
+            result  
+})

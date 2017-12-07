@@ -1,3 +1,4 @@
+# readsToTarget generic -----
 #'@title Trims reads to a target region.
 #'@description Trims aligned reads to one or several target regions,
 #'optionally reverse complementing the alignments.
@@ -25,8 +26,9 @@
 #'@export
 setGeneric("readsToTarget", function(reads, target, ...) {
   standardGeneric("readsToTarget")})
+# -----
 
-
+# readsToTarget GAlignments, GRanges -----
 #'@param name An experiment name for the reads.  (Default: NULL)
 #'@param reverse.complement (Default: TRUE)  Should the alignments be
 #' oriented to match the strand of the target? If TRUE, targets located 
@@ -180,10 +182,10 @@ setMethod("readsToTarget", signature("GAlignments", "GRanges"),
     crun <- CrisprRun(result, target, rc = rc, name = name,
                       chimeras = chimeras, verbose = verbose)
     crun
-})
+}) # -----
 
 
-
+# readsToTarget GAlignmentsList, GRanges -----
 #'@rdname readsToTarget
 setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
           function(reads, target, ..., reference = reference,
@@ -213,10 +215,10 @@ setMethod("readsToTarget", signature("GAlignmentsList", "GRanges"),
                             verbose, chimeras = chimeras, minoverlap = minoverlap,
                             orientation = orientation, checked = TRUE, ...)
     cset
-})
+}) # -----
 
 
-
+# readsToTarget character, GRanges -----
 #'@param names Experiment names for each bam file.  If not supplied, filenames are used.
 #'@param chimeras Flag to determine how chimeric reads are treated.  One of
 #'"ignore", "exclude", and "merge".  Default "count", "merge" not implemented yet
@@ -275,11 +277,12 @@ setMethod("readsToTarget", signature("character", "GRanges"),
                             chimeras = chimeras, minoverlap = minoverlap,
                             orientation = orientation, checked = TRUE, ...)
      cset
-})
+}) # -----
 
 #__________________________________________________________________
 # readsToTargets
 #__________________________________________________________________
+# readsToTargets -----
 #'@export
 #'@rdname readsToTarget
 setGeneric("readsToTargets", function(reads, targets, ...) {
@@ -466,13 +469,14 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
 
     result <- result[!sapply(result, is.null)]
     result
-  })
+  }) # -----
 
 
 #__________________________________________________________________
 # Data import and processing
 #__________________________________________________________________
 
+# separateChimeras -----
 separateChimeras <- function(bam, targets, tolerance = 5,
                              by.flag = TRUE, verbose = FALSE){
 
@@ -554,10 +558,10 @@ separateChimeras <- function(bam, targets, tolerance = 5,
   # Return list of chimerasByPCR and bam
   result <- list(bam = bam, chimerasByPCR = chimerasByPCR)
   result
-}
+} # -----
 
 
-
+# alnsToCrisprSet -----
 alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
                             collapse.pairs, names, use.consensus, target.loc,
                             verbose, orientation, chimeras = NULL,
@@ -616,9 +620,10 @@ alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
                       target.loc = target.loc, 
                       verbose = verbose, names = names, ...)
     cset
-}
+} # -----
 
 
+# readTargetBam -----
 #'@title Internal CrispRVariants function for reading and filtering a bam file
 #'@description Includes options for excluding reads either by name or range.
 #'The latter is useful if chimeras are excluded.  Reads are excluded before
@@ -706,12 +711,11 @@ readTargetBam <- function(file, target, exclude.ranges = GRanges(),
   if (chimeras == "merge"){
     result <- mergeChimeras(bam, chimera_idxs, verbose = verbose)
     return(list(bam = c(bam[-chimera_idxs], result$merged), chimeras = result$unmerged))
-    # warning("Merging chimeras not implemented yet, ignoring chimeras")
-    #return(list(bam = bam, chimeras = GenomicAlignments::GAlignments()))
   }
-}
+} # -----
 
 
+# rcAlns -----
 #'@title Internal CrispRVariants function for determining read orientation
 #'@description Function for determining whether reads should be oriented to the
 #'target strand, always displayed on the positive strand, or oriented to 
@@ -736,13 +740,21 @@ rcAlns <- function(target.strand, orientation){
     } 
     return(FALSE)
               
-}
+} # -----
 
 
+# narrowAlignments -----
 #'@title Narrow a set of aligned reads to a target region
 #'@description Aligned reads are narrowed to the target region.  In
 #'the case of reads with deletions spanning the boundaries of the target,
 #'reads are narrowed to the start of the deletion,
+#'@author Helen Lindsay
+#'@rdname narrowAlignments
+#'@export
+setGeneric("narrowAlignments", function(alns, target, ...) {
+  standardGeneric("narrowAlignments")})
+
+
 #'@param alns A GAlignments object including a metadata column "seq"
 #'containing the sequence
 #'@param target A GRanges object
@@ -751,14 +763,12 @@ rcAlns <- function(target.strand, orientation){
 #'@param minoverlap Minimum overlapping region between alignments and target.
 #'If not specified, alignments must span the entire target region.
 #'(Default: NULL)
+#'@param clipping.ops CIGAR operations corresponding to clipping
+#'(Default: c("S","H"))
+#'@param match.ops CIGAR operations corresponding to a match, i.e.
+#'a non-indel position (Default: c("M","X","="))
 #'@param ... additional arguments
-#'@author Helen Lindsay
-#'@rdname narrowAlignments
-#'@export
-setGeneric("narrowAlignments", function(alns, target, ...) {
-  standardGeneric("narrowAlignments")})
-
-#'@return The narrowed alignments (GAlignments),
+#'@return The narrowed alignments (GAlignments)
 #'@rdname narrowAlignments
 #'@examples
 #'bam_fname <- system.file("extdata", "gol_F1_clutch_2_embryo_4_s.bam",
@@ -769,7 +779,8 @@ setGeneric("narrowAlignments", function(alns, target, ...) {
 #'narrowAlignments(bam, target, reverse.complement = FALSE)
 setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
           function(alns, target, ..., reverse.complement,
-                   minoverlap = NULL, verbose = FALSE){
+                   minoverlap = NULL, verbose = FALSE,
+                   clipping.ops = c("S","H"), match.ops = c("M","X","=")){
 
     # Narrowing example:
     # 3-4-5-6-7-8-9-10 Read
@@ -778,8 +789,9 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     # target_end 8 - target_start 5 + cigstart 3 = index
 
     # Notes:
-    # Cannot directly narrow the alignments as the seqs aren't narrowed
-    # and want to keep indel operations bordering targe range
+    # Not using cigarNarrow as the seqs aren't narrowed
+    # and want to keep indel operations bordering target range
+  
     if (is.null(minoverlap)){
       # alns must span target
       alns <- alns[start(alns) <= start(target) & end(alns) >= end(target) &
@@ -802,7 +814,7 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
 
     # Find the on target operations
     clipped <- unlist(GenomicAlignments::explodeCigarOps(cigar(alns)))
-    clipped <- clipped %in% c("S","H")
+    clipped <- clipped %in% clipping.ops
     on_target <- unlist(start(genomic) <= end(target) & end(genomic) >= start(target))
     on_target <- on_target & ! clipped
     on_target <- relist(on_target, ref_ranges)
@@ -811,14 +823,17 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     first_on_tg <- ! duplicated(on_target) & on_target
     last_on_tg <- ! duplicated(on_target, fromLast = TRUE) & on_target
 
-    # Find cases where the first or last on target operation is a match ("M")
-    # and operations overlap boundaries (partial alignments do not need trimming)
+    # Find cases where the first or last on target operation is a match ("M"),
+    # operations overlap boundaries (partial alignments don't need trimming)
     ops <- unlist(explodeCigarOps(cigar(alns)))
-    first_op_m <- ops[unlist(first_on_tg)] == "M" & start(alns) < start(target)
-    last_op_m <- ops[unlist(last_on_tg)] == "M"  & end(alns) > end(target)
+    first_op_m <- ops[unlist(first_on_tg)] %in% match.ops &
+                     start(alns) < start(target)
+    last_op_m <- ops[unlist(last_on_tg)] %in% match.ops &
+                     end(alns) > end(target)
 
-    # Narrow border "M" operations to match target
-    # need to know where the target start (genomic) is wrt sequence (query) coordinates
+    # Narrow border match operations to match target
+    # need to know where the target start (genomic) is wrt
+    # sequence (query) coordinates
     cig <- GenomicAlignments::cigar(alns)
     q_ranges <- GenomicAlignments::cigarRangesAlongQuerySpace(cig)
     sq_starts <- start(q_ranges)[first_on_tg]
@@ -875,8 +890,10 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
     new_alns <- do.call(GAlignments, ga_params)
 
     new_alns
-})
+}) # -----
 
+
+# collapsePairs -----
 #'@title Internal CrispRVariants function for collapsing pairs with concordant indels
 #'@description Given a set of alignments to a target region, finds read pairs.
 #'Compares insertion/deletion locations within pairs using the cigar string.
@@ -897,15 +914,19 @@ setMethod("narrowAlignments", signature("GAlignments", "GRanges"),
 collapsePairs <- function(alns, use.consensus = TRUE, keep.unpaired = TRUE,
                           verbose = TRUE, ...){
   dots <- list(...)
-
-  if (! unique(sapply(dots, length)) == length(alns)){
-    stop("Each ... argument supplied must have the same length as the alignments")
+ 
+  if (length(dots) > 0){
+    if (! unique(sapply(dots, length)) == length(alns)){
+      stop("Each ... argument supplied must have the ",
+           "same length as the alignments")
+    }
   }
-
+  
   # 1 = 2^0 = paired flag
   # 2048 = 2^11 = supplementary alignment flag
   is_primary <- !(bitwAnd(mcols(alns)$flag, 2048) & bitwAnd(mcols(alns)$flag, 1))
-  pairs <- findChimeras(alns[is_primary], by.flag = FALSE) # This just matches read names
+  pairs <- findChimeras(alns[is_primary], by.flag = FALSE) 
+  # Above just matches read names
 
   # If there are no pairs, no need to do anything further
   if (length(pairs) == 0){
@@ -952,10 +973,10 @@ collapsePairs <- function(alns, use.consensus = TRUE, keep.unpaired = TRUE,
   keep_alns <- alns[keep]
 
   if (use.consensus){
-    seq_runs <- rle(paste0(nms_codes, mcols(alns[pairs])$seq))$lengths
+    seq_runs <- rle(paste0(nms_codes, mcols(alns[is_primary][pairs])$seq))$lengths
     same_seq <- rep(seq_runs, seq_runs) == rep(nms$lengths, nms$lengths)
 
-    ncc_seqs <- mcols(alns[pairs][concordant & !same_seq])$seq
+    ncc_seqs <- mcols(alns[is_primary][pairs][concordant & !same_seq])$seq
     if (verbose){
       message(sprintf("Finding consensus for %s pairs with mismatches\n",
                   length(ncc_seqs)/2))
@@ -975,13 +996,13 @@ collapsePairs <- function(alns, use.consensus = TRUE, keep.unpaired = TRUE,
 
   result <- c(list("alignments" = keep_alns), filtered.dots)
   result
-}
+} # -----
 
 
 #__________________________________________________________________
 # Input checks 
 #__________________________________________________________________
-
+# input checks -----
 .checkReadsToTarget <- function(target, reference, target.loc,
                                 reverse.complement, orientation,
                                 chimeras){
@@ -1069,4 +1090,4 @@ collapsePairs <- function(alns, use.consensus = TRUE, keep.unpaired = TRUE,
     }
   }
   TRUE
-}
+} # -----

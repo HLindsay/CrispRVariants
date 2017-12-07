@@ -1,3 +1,4 @@
+# CrisprRun class definition -----
 #'@title CrisprRun class
 #'@description A ReferenceClass container for a single sample of alignments narrowed
 #'to a target region.  Typically CrisprRun objects will not be accessed directly,
@@ -53,8 +54,9 @@ CrisprRun = setRefClass(
              cigar_labels = "character",
              chimeras = "GAlignments",
              chimera_combs = "data.frame")
-)
+) # -----
 
+# CrisprRun initializer -----
 CrisprRun$methods(
   initialize = function(bam, target, rc = FALSE, name = NULL,
                         chimeras = GenomicAlignments::GAlignments(),
@@ -75,13 +77,15 @@ CrisprRun$methods(
 
     # recalculate genome.ranges in case of keep_unpaired = FALSE, not tested
     .self$getInsertionSeqs(target = target)
-  },
+  }, # -----
 
+  # show -----
   show = function(){
     print(c(class(.self), sprintf("CrisprRun object named %s, with %s on target alignments.",
                                   .self$name, length(.self$alns)), .self$alns))
-  },
+  }, # ------
 
+  # removeSeqs - removed -----
 #  removeSeqs = function(idxs){
 #'
 #Description:
@@ -116,8 +120,9 @@ CrisprRun$methods(
 #
 #    .self$field("alns", .self$alns[-idxs])
 #    .self$field("cigar_labels", .self$cigar_labels[-idxs])
-#  },
+#  }, # -----
 
+  # getInsertionSeqs -----
   getInsertionSeqs = function(target){
 ' 
 Description:
@@ -154,16 +159,18 @@ Input parameters:
     colnames(agg) <- c("start", "seq", "genomic_start",
                        "cigar_label", "idxs", "count")
     return(agg)
-  },
+  }, # -----
 
+  # .checkNonempty -----
   .checkNonempty = function(){
     if (length(.self$alns) == 0){
       message("No on target alignments")
       return(FALSE)
     }
     TRUE
-  },
+  }, # -----
 
+  # splitChimeras -----
   .splitChimeras = function(){
     splits <- split(cigar(.self$chimeras), names(.self$chimeras))
     if (length(splits) == 0) return(data.frame())
@@ -171,13 +178,14 @@ Input parameters:
     tt <- as.data.frame(table(combination))
     tt <- tt[order(tt$Freq, decreasing = TRUE),]
     tt
-  },
+  }, # -----
 
-
+  # getCigarLabels -----
   getCigarLabels = function(target.loc, genome_to_target, ref,
                             separate.snv, rc, match.label, mismatch.label,
                             keep.ops = c("I","D","N"), upstream = 8,
-                            downstream = min(6, width(ref) - cut_site)){
+                            downstream = min(6, width(ref) - cut_site),
+                            regions = NULL){
     '
 Description:
   Sets the "cig_labels" field, returns the cigar labels.
@@ -195,18 +203,23 @@ Input parameters:
   keep.ops:         CIGAR operations to remain in the variant label
                     (usually indels)
   upstream:         distance upstream of the cut site to call SNVs
-  downstream:       distance downstream of the cut site to call SNVs'
+  downstream:       distance downstream of the cut site to call SNVs
+  regions:          IRanges(k) Regions for counting insertions and
+                    deletions.  Insertions on the right border are not
+                    counted.'
     
     cigs <- GenomicAlignments::cigar(.self$alns)
-    wdths <- GenomicAlignments::explodeCigarOpLengths(cigs)
-    ops <- GenomicAlignments::explodeCigarOps(cigs)
-    temp <- CharacterList(relist(paste0(unlist(wdths), unlist(ops)), wdths))
-    ops <- CharacterList(ops)
-    keep <- ops %in% keep.ops
-
-    rranges <- cigarRangesAlongReferenceSpace(cigs, pos = start(.self$alns),
-                                              ops = keep.ops)
-    # here get snvs, add snv ops
+    temp <- .explodeCigarOpCombs(cigs, keep.ops)
+    
+    rranges <- cigarRangesAlongReferenceSpace(cigs,
+                                            pos = start(.self$alns),
+                                            ops = keep.ops)
+    
+    if (! is.null(regions)){
+      # Check for consistency - should insertions on the right border be kept?
+      keep <- relist(overlapsAny(unlist(rranges), regions), rranges)
+      temp <- temp[keep]
+    }
 
     if (isTRUE(rc)){
       glocs <- end(rranges)
@@ -215,22 +228,25 @@ Input parameters:
     }
     
     # Add location to cigar operations
+    ops_per_aln <- lengths(temp)
+    
     temp <- paste(genome_to_target[as.character(unlist(glocs))],
-                  unlist(temp[keep]), sep = ":")
-        
-    temp <- as.list(relist(temp, IRanges::PartitioningByEnd(cumsum(sum(keep)))))
-          
-    complex <- sum(keep) > 1
-
+                  unlist(temp), sep = ":")
+    
+    temp <- as.list(relist(temp, IRanges::PartitioningByWidth(ops_per_aln)))
+    complex <- ops_per_aln > 1
+    
+    # Reverse if necessary and collapse
     if (isTRUE(rc)){
       temp[complex] <- sapply(temp[complex], function(x) paste(rev(x), collapse = ","))
     } else {
       temp[complex] <- sapply(temp[complex], base::paste, collapse = ",")
     }
     
+    # Adjust cigar for partial alignments
     spans <- width(.self$alns) == nchar(ref) 
-    temp[sum(keep) == 0 & spans] <- match.label
-    temp[sum(keep) == 0 & ! spans] <- cigs[sum(keep) == 0 & ! spans]
+    temp[ops_per_aln == 0 & spans] <- match.label
+    temp[ops_per_aln == 0 & ! spans] <- cigs[ops_per_aln == 0 & ! spans]
 
     renamed <- as.character(temp)
     
@@ -245,17 +261,18 @@ Input parameters:
     
     #__________
     # Check if partial alns starting from different places have same labels
-    strts <- start(.self$alns)[sum(keep) == 0 & ! spans]
-    temp <- split(strts, renamed[sum(keep) == 0 & ! spans])
+    strts <- start(.self$alns)[ops_per_aln == 0 & ! spans]
+    temp <- split(strts, renamed[ops_per_aln == 0 & ! spans])
     if (! all(lengths(lapply(temp, unique)) == 1) ){
-       rn <- unlist(renamed[sum(keep) == 0 & ! spans]) 
+       rn <- unlist(renamed[ops_per_aln == 0 & ! spans]) 
        gen_strt <- genome_to_target[as.character(unlist(temp))]
         
     }
     
     renamed
-  },
+  }, # -----
 
+  # .splitNonIndel -----
   .splitNonIndel = function(ref, cig_labels, rc, match_label = "no variant",
                           mismatch_label = "SNV", cut_site = 17,
                           upstream = 8, downstream = 6){
@@ -297,6 +314,6 @@ Input parameters:
     result[result == sprintf("%s:", mismatch_label)] <- match_label
     cig_labels[no_var] <- result
     cig_labels
-    }
+    } # -----
 
 )

@@ -2,6 +2,19 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.4}{
+   \itemize{
+      \item Changes to \code{narrowAlignments} for PacBio cigar format
+      \item Bug fix in \code{collapsePairs}.  Only occurred
+      when running independently of \code{readsToTarget}.
+      \item Adds "alleles" accessor for relating variant labels
+      to the truncated cigar strings
+      \item Minor code changes to make it easier to run a
+      non-standard counting pipeline
+  }
+}
+
+
 \section{Changes in version 1.7.2}{
    \itemize{
       \item Allowing plotting arbitrarily many subsets of

@@ -1,3 +1,4 @@
+# CrisprSet class definition -----
 #'@title CrisprSet class
 #'@description A ReferenceClass container for holding a set of narrowed alignments,
 #'each corresponding to the same target region.  Individual samples are
@@ -70,8 +71,9 @@ CrisprSet = setRefClass(
              target = "GRanges",
              genome_to_target = "integer",
              pars = "list")
-)
+) # -----
 
+# CrisprSet initializer -----
 CrisprSet$methods(
   initialize = function(crispr.runs, reference, target, rc = FALSE,
                         names = NULL, renumbered = TRUE, target.loc = 17,
@@ -147,16 +149,18 @@ CrisprSet$methods(
     if (isTRUE(verbose)) message("Counting variant combinations\n")
     .self$.countCigars(cig_by_run)
     .self$.getInsertions()
-  },
+  }, # -----
 
+  # show -----
   show = function(){
     cat(sprintf(paste0("CrisprSet object containing %s CrisprRun samples\n",
                          "Target location:\n"), length(.self$crispr_runs)))
     print(.self$target)
     print("Most frequent variants:")
     print(.self$.getFilteredCigarTable(top.n = 6))
-  },
+  }, # -----
 
+  # .checkSamplesAndAlleles -----
   .checkSamplesAndAlleles = function(alleles, samples){
     # Not currently used
     # checks before removing alleles from particular samples 
@@ -180,8 +184,9 @@ CrisprSet$methods(
       warning(sprintf("Alleles not found: %s", 
                       paste(missing_alleles, sep = ", ")))
     }
-  },
+  }, # -----
   
+  # .setCigarLabels -----
   .setCigarLabels = function(renumbered, target.loc, target_start = NA,
                              target_end = NA, rc = FALSE, match_label = "no variant",
                              mismatch_label = "SNV", split.snv = TRUE,
@@ -224,8 +229,9 @@ CrisprSet$methods(
                               downstream = downstream.snv), BPPARAM = bpparam)
 
     cig_by_run
-  },
+  }, # -----
 
+  # .countCigars -----
   .countCigars = function(cig_by_run = NULL, nonvar_first = TRUE){
     # Note that this function does not consider starts, two alignments starting at
     # different locations but sharing a cigar string are considered equal
@@ -253,8 +259,9 @@ CrisprSet$methods(
     }
 
     .self$field("cigar_freqs", m)
-  },
+  }, # -----
 
+  # filterUniqueLowQual -----
   filterUniqueLowQual = function(min_count = 2, max_n = 0, verbose = TRUE){
 '
 Description:
@@ -293,8 +300,9 @@ Input parameters:
     if ( length(rm_cset) > 0){
       .self$field("cigar_freqs", .self$cigar_freqs[-rm_cset,,drop = FALSE])
     }
-  },
+  }, # -----
 
+  # .getFilteredCigarTable -----
   .getFilteredCigarTable = function(top.n = nrow(.self$cigar_freqs),
                                     min.count = 1, min.freq = 0,
                                     include.chimeras = TRUE,
@@ -360,8 +368,9 @@ Input parameters:
     }
     
     m
-  },
+  }, # -----
 
+  # .getUniqueIndelRanges -----
   .getUniqueIndelRanges = function(add_chr = TRUE, add_to_ins = TRUE){
     # Note this only gets the ranges, not the sequences, inserted sequences may differ
     # Returns a GRanges object of all insertions and deletions, with names = variant names
@@ -418,8 +427,9 @@ Input parameters:
    }
 
     GenomicRanges::GRanges(chrom, ir)
-  },
+  }, # -----
 
+  # filterVariants -----
   filterVariants = function(cig_freqs = NULL, names = NULL, columns = NULL,
                             include.chimeras = TRUE){
 
@@ -490,8 +500,9 @@ Input parameters:
     vars[vars == ""] <- .self$pars$match_label
     cig_freqs <- rowsum(cig_freqs, unlist(vars))
     cig_freqs
-  },
+  }, # -----
 
+  # .getSNVs -----
   .getSNVs = function(min.freq = 0.25, include.chimeras = TRUE){
     # Potential improvements:
     # Inconsistency between input (0-1) and output (0-100)
@@ -513,8 +524,9 @@ Input parameters:
       snv_fqs[snv_loc] <- max(fq)
     }
     snv_fqs[snv_fqs >= min.freq*100]
-  },
+  }, # -----
 
+  # mutationEfficiency -----
   mutationEfficiency = function(snv = c("non_variant", "include","exclude"),
                                 include.chimeras = TRUE,
                                 exclude.cols = NULL, group = NULL,
@@ -611,8 +623,9 @@ Return value:
 
     .self$.calculateEfficiency(freqs, total_seqs, count.alleles, 
                                per.sample, min.freq)
-  },
+  }, # -----
 
+  # .calculateEfficiency -----
   .calculateEfficiency = function(freqs, total_seqs, count.alleles, 
                                   per.sample, min.freq = 0){
      mutants <- colSums(freqs)
@@ -635,8 +648,9 @@ Return value:
        result <- result[!names(result) %in% colnames(freqs)]
      }
      result
-  },
+  }, # -----
 
+  # .countVariantAlleles ----
   .countVariantAlleles = function(freqs, total_seqs, min.freq){
     # how many nonzero entries per sample (absolute and percentage)
     # This step removes variants that never occur in this sample group
@@ -664,8 +678,9 @@ Return value:
     names(result) <- c("AvAlleles","AvPctAlleles","SeqsPerAllele", 
                        "MinAlleles", "MaxAlleles","TotalAlleles")
     result
-  },
+  }, # -----
 
+  # classifyVariantsByType -----
   classifyVariantsByType = function(...){
 '
 Description:
@@ -698,8 +713,9 @@ Return value:
     vars[is_complex & is_del & ! ins_and_del] <- "multiple deletions"
     
     vars
-  },
+  }, # -----
 
+  # classifyVariantsByLoc -----
   classifyVariantsByLoc = function(txdb, add_chr = TRUE, verbose = TRUE, ...){
   '
 Description:
@@ -755,8 +771,9 @@ Return value:
     ord <- match(names(result), vars)
     classification[ord] <- result
     classification
-  },
+  }, # -----
 
+  # classifyCodingBySize -----
   classifyCodingBySize = function(var_type, cutoff = 10){
 '
 Description:
@@ -793,8 +810,9 @@ Result:
     }
 
     var_type
-  },
+  }, # -----
 
+  # heatmapCigarFreqs -----
   heatmapCigarFreqs = function(as.percent = TRUE, x.size = 8, y.size = 8,
                                x.axis.title = NULL, x.angle = 90,
                                min.freq = 0, min.count = 0,
@@ -889,8 +907,9 @@ See also:
                          x.axis.title = x.axis.title,
                          x.angle = x.angle, add.other = TRUE, ...)
     return(p)
-  },
+  }, # -----
 
+  # plotVariants -----
   plotVariants = function(min.freq = 0, min.count = 0,
                    top.n = nrow(.self$cigar_freqs), alleles = NULL,
                    renumbered = .self$pars["renumbered"],
@@ -1021,8 +1040,9 @@ Return value:
     
     p <- do.call(plotAlignments, args)
     return(p)
-  },
+  }, # -----
 
+  # .truncatePlot -----
   .truncatePlot = function(plot_args, keep, target_coords){
     # To do: fix the box location if it is truncated
 
@@ -1052,9 +1072,9 @@ Return value:
     
     # guide.loc, target.loc, pam.start, pam.end
     plot_args
-  },
+  }, # -----
 
-
+  # .getInsertions -----
   .getInsertions = function(){
     # Used by plotVariants for getting a table of insertions
 
@@ -1073,9 +1093,9 @@ Return value:
       }      
       
     .self$field("insertion_sites", all_ins)
-  },
+  }, # -----
 
-
+  # consensusAlleles -----
   consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = TRUE){
 '
 Description:
@@ -1141,9 +1161,9 @@ if return_nms = TRUE
 
     names(seqs) <- splits_labels
     seqs
-  },
+  }, # -----
 
-
+  # makePairwiseAlns -----
   makePairwiseAlns = function(cig_freqs = .self$cigar_freqs, ...){
 '
 Description:
@@ -1168,9 +1188,9 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
 
     names(alns) <- mcols(temp)$label
     alns
-  },
+  }, # -----
 
-
+   # .genomeToTargetLocs -----
   .genomeToTargetLocs = function(target.loc, target_start, target_end, plus_strand, 
                                  gs = NULL, ge = NULL){
     # target.loc should be relative to the start of the target sequence, even if the
@@ -1208,5 +1228,5 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
 
     .self$field("genome_to_target", new_numbering)
     new_numbering
-  }
+  } # -----
 )
