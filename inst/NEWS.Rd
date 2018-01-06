@@ -6,11 +6,14 @@
    \itemize{
       \item Changes to \code{narrowAlignments} for PacBio cigar format
       \item Bug fix in \code{collapsePairs}.  Only occurred
-      when running independently of \code{readsToTarget}.
+      when running outside of \code{readsToTarget}.
       \item Adds "alleles" accessor for relating variant labels
       to the truncated cigar strings
+      \item Return unmergeable alignments instead of raising an error
       \item Minor code changes to make it easier to run a
       non-standard counting pipeline
+      \item Code from initialisers split into separate files for 
+      easier readability
   }
 }
 

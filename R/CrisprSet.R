@@ -139,8 +139,9 @@ CrisprSet$methods(
                                target.loc = target.loc, 
                                target_start = start(target), 
                                target_end = end(target),
-                               rc = rc, match_label = match.label,
-                               mismatch_label = mismatch.label, ref = ref,
+                               rc = rc, ref = ref,
+                               match_label = match.label,
+                               mismatch_label = mismatch.label, 
                                split.snv = split.snv,
                                upstream.snv = upstream.snv,
                                downstream.snv = downstream.snv,
@@ -188,9 +189,10 @@ CrisprSet$methods(
   
   # .setCigarLabels -----
   .setCigarLabels = function(renumbered, target.loc, target_start = NA,
-                             target_end = NA, rc = FALSE, match_label = "no variant",
+                             target_end = NA, rc = FALSE, ref = NULL,
+                             match_label = "no variant",
                              mismatch_label = "SNV", split.snv = TRUE,
-                             upstream.snv = 8, downstream.snv = 6, ref = NULL,
+                             upstream.snv = 8, downstream.snv = 6,
                              bpparam = BiocParallel::SerialParam()){
     g_to_t <- NULL
 
@@ -1096,7 +1098,8 @@ Return value:
   }, # -----
 
   # consensusAlleles -----
-  consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = TRUE){
+  consensusAlleles = function(cig_freqs = .self$cigar_freqs, return_nms = TRUE,
+                              match.ops = c("M","X","=")){
 '
 Description:
 Get variants by their cigar string, make the pairwise alignments for the consensus
@@ -1106,6 +1109,7 @@ Input parameters:
 cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs,
 but could also be filtered)
 return_nms: If true, return a list of sequences and labels (Default:FALSE)
+match.ops:  CIGAR operations for 1-1 alignments
 
 Return:
 A DNAStringSet of the consensus sequences for the specified alleles,
@@ -1113,7 +1117,7 @@ or a list containing the consensus sequences and names for the labels
 if return_nms = TRUE
 '
     
-    # TO DO:
+    # Possible improvement:
     # This function only needs cig_labels, not cig_freqs
     
     cigs <- unlist(lapply(.self$crispr_runs, function(x) cigar(x$alns)),
@@ -1124,12 +1128,20 @@ if return_nms = TRUE
     # calling by name with duplicates returns the first match
     names(cigs) <- cig_labels
     
+    # Not identical on pac bio, can have different cigars and same label
+    #var_alleles <- alleles(.self)
+    #cigs2 <- structure(as.character(var_alleles$cigar), 
+    #          names = as.character(var_alleles$label))
+    
+    
     splits <- split(seq_along(cig_labels), cig_labels)
     splits <- splits[match(rownames(cig_freqs), names(splits))]
     
     splits_labels <- names(splits)
     names(splits) <- cigs[names(splits)]
-    all_d <- grep("M", names(splits), invert = TRUE)
+    
+    grep_str <- paste(match.ops, collapse = "|")
+    all_d <- grep(grep_str, names(splits), invert = TRUE)
     
     x <- lapply(.self$crispr_runs, function(x) x$alns)
     all_alns <- do.call(c, unlist(x, use.names = FALSE))

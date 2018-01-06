@@ -232,7 +232,8 @@ setMethod("alleles", signature("CrisprSet"),
             cigars <- GenomicAlignments::cigar(alns)
             labels <- unlist(unname(lapply(obj$crispr_runs,
                                            "[[", "cigar_labels")))
-            result <- data.frame(label = labels, cigar = cigars,
+            result <- data.frame(label = as.character(labels), 
+                                 cigar = as.character(cigars),
                                  genomic.loc = start(alns))
             result <- unique(result)
             result  

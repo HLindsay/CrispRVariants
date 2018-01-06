@@ -67,8 +67,10 @@ CrisprRun$methods(
         name <<- sprintf("%s:%s-%s", seqnames(target), start(target), end(target))
     } else { name <<- name}
 
-    if (isTRUE(verbose)) message(sprintf("\nInitialising CrisprRun %s\n", .self$name))
-
+    if (isTRUE(verbose)){
+      message(sprintf("\nInitialising CrisprRun %s\n", .self$name))
+    }
+    
     alns <<- bam
     chimeras <<- chimeras
     chimera_combs <<- .self$.splitChimeras()
@@ -185,7 +187,7 @@ Input parameters:
                             separate.snv, rc, match.label, mismatch.label,
                             keep.ops = c("I","D","N"), upstream = 8,
                             downstream = min(6, width(ref) - cut_site),
-                            regions = NULL){
+                            regions = NULL, snv.regions = NULL){
     '
 Description:
   Sets the "cig_labels" field, returns the cigar labels.
@@ -206,12 +208,14 @@ Input parameters:
   downstream:       distance downstream of the cut site to call SNVs
   regions:          IRanges(k) Regions for counting insertions and
                     deletions.  Insertions on the right border are not
-                    counted.'
+                    counted.
+  snv.regions       Regions for calling SNVS'
     
     cigs <- GenomicAlignments::cigar(.self$alns)
     temp <- .explodeCigarOpCombs(cigs, keep.ops)
     
     rranges <- cigarRangesAlongReferenceSpace(cigs,
+                                            # NOT START ALNS BUT START ALNS 
                                             pos = start(.self$alns),
                                             ops = keep.ops)
     

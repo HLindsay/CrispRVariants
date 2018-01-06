@@ -333,3 +333,48 @@ dispatchDots <- function(func, ..., call = FALSE){
     result
 } # -----
 
+
+# .explodeCigarOpCombs -----
+#'@title .explodeCigarOpCombs
+#'@description Breaks cigar strings into individual operations
+#'@param cigar character(m) A vector of cigar strings
+#'@param ops character(n) Which operations should be kept?
+#'@return The operations, as a CharacterList
+#'@author Helen Lindsay
+.explodeCigarOpCombs <- function(cigar, ops = GenomicAlignments::CIGAR_OPS){
+    wdths <- GenomicAlignments::explodeCigarOpLengths(cigar, ops = ops)
+    keep.ops <- GenomicAlignments::explodeCigarOps(cigar, ops = ops)
+    result <- IRanges::CharacterList(relist(paste0(unlist(wdths),
+                                                   unlist(keep.ops)),
+                                            wdths))
+} # -----
+
+
+# selectOps -----
+#'@title selectOps
+#'@description select CIGAR operations in a region of interest.
+#'@param alns (GAlignments)
+#'@param ops  CIGAR operations to consider (Default: all)
+#'@param op.regions (GRanges) Return operations only in these regions
+#'@param snp.regions (GRanges) Return mismatches only in these regions
+#'@param pos An offset for the cigar ranges
+#'@return A GRanges list of opertion locations in reference space
+#'with a metadata column for the operation width in query space. 
+selectOps <- function(alns, ops = GenomicAlignments::CIGAR_OPS,
+                      op.regions = NULL, snp.regions = NULL, pos = 1L){
+    cigs <- GenomicAlignments::cigar(alns)
+    op_rngs <- cigarRangesAlongReferenceSpace(cigs, with.ops = TRUE,
+                                              ops = ops, pos = pos)
+    wdths <- explodeCigarOpLengths(cigs, ops = ops)
+    temp <- unlist(op_rngs)
+    mcols(temp)$qwidth <- unlist(wdths)
+    op_rngs <- relist(temp, op_rngs)
+    
+    # If counting regions are specified, return operations in these regions
+    if (! is.null(op.regions)){
+       # Check for consistency - should insertions on the right border be kept?
+       keep_rngs <- relist(overlapsAny(unlist(op_rngs), op.regions), op_rngs)
+       op_rngs <- op_rngs[keep]
+    }
+    op_rngs
+} # -----

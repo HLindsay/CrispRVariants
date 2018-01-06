@@ -27,12 +27,15 @@ seqsToAln <- function(cigar, dnaseq, target, del_char = "-",
     
     if (as.character(GenomicRanges::strand(target)) == "*") strand <- "+"
   
-    result <- GenomicAlignments::sequenceLayer(dnaseq, cigar, D.letter = del_char,
+    result <- GenomicAlignments::sequenceLayer(dnaseq, cigar,
+                                               D.letter = del_char,
                                                N.letter = "N")
     if (! is.null(aln_start)){
       shifts <- aln_start - GenomicAlignments::start(target)
-      result <- Biostrings::stackStrings(result, shift = shifts, from = 1,
-                 to = width(target), Lpadding.letter = "+", Rpadding.letter = ".")
+      result <- Biostrings::stackStrings(result, shift = shifts,
+                                         from = 1, to = width(target),
+                                         Lpadding.letter = "+",
+                                         Rpadding.letter = ".")
       if (! isTRUE(allow_partial) & isTRUE(any(grep("\\+|\\.", result)))){
         stop(paste("When allow_partial is FALSE, dnaseq to be",
                    "trimmed must span the target location"))
