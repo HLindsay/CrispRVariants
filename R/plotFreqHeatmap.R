@@ -50,7 +50,6 @@ setMethod("plotFreqHeatmap", signature("matrix"),
   # param colour.vals A matrix of the same dimensions as obj containing
   # numbers that will be used to colour the heatmap.
   
-  
   # If there should be a header, create it and make space in plot
   add_header <- ifelse(is.null(header), FALSE, TRUE)
   

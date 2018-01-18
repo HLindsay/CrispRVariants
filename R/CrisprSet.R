@@ -801,7 +801,8 @@ Result:
                                top.n = nrow(.self$cigar_freqs),
                                type = c("counts", "proportions"),
                                header = c("default", "counts", "efficiency"),
-                               order = NULL, alleles = NULL, ...){
+                               order = NULL, alleles = NULL, 
+                               create.plot = TRUE, ...){
 
     '
 Description:
@@ -830,6 +831,8 @@ Input parameters:
     alleles:      Names of alleles to include.  Selection of alleles takes
                   place after filtering (Default: NULL).
     exclude:      Names of alleles to exclude (Default: NULL)
+    create.plot:  Should the plot be created (TRUE, default), or the data used in
+                  the plot returned.
     ...:          Extra filtering or plotting options
 
 Return value:
@@ -848,6 +851,9 @@ See also:
 
     # Alleles determines row order and alleles included
     if (! is.null(alleles)){
+      # Move "Other" to the end for consistency with plotAlignments
+      is_other <- which(alleles == "Other")
+      alleles <- alleles[c(setdiff(seq_along(alleles), is_other), is_other)]
       row_ord <- match(alleles, rownames(cig_freqs))
       if (any(is.na(row_ord))){
         warning(sprintf("After filtering, alleles %s not found.", 
@@ -883,6 +889,19 @@ See also:
       col_sums <- col_sums[order]
     }
 
+    freq_heatmap_args <- list(obj = cig_freqs, header = header,
+                              header.name = header_name,
+                              col.sums = col_sums, as.percent = as.percent,
+                              x.size = x.size, y.size = y.size,
+                              x.axis.title = x.axis.title,
+                              x.angle = x.angle, add.other = TRUE)
+    
+    freq_heatmap_args <- modifyList(freq_heatmap_args, list(...))
+    
+    if (! isTRUE(create.plot)){
+       return(freq_heatmap_args)
+    }
+    
     p <- plotFreqHeatmap(cig_freqs, header = header, header.name = header_name,
                          col.sums = col_sums, as.percent = as.percent,
                          x.size = x.size, y.size = y.size,

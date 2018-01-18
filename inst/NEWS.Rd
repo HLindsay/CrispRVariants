@@ -2,6 +2,14 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.4}{
+   \itemize{
+      \item Added \code{create.plot} argument for \code{plotFreqHeatmap}
+      with signature \code{CrisprSet}.
+  }
+}
+
+
 \section{Changes in version 1.7.2}{
    \itemize{
       \item Allowing plotting arbitrarily many subsets of
