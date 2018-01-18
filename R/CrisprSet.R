@@ -135,21 +135,21 @@ CrisprSet$methods(
 
     if (isTRUE(verbose)) message("Renaming cigar strings\n")
  
-    cig_by_run <- .self$.setCigarLabels(renumbered = renumbered,
-                               target.loc = target.loc, 
-                               target_start = start(target), 
-                               target_end = end(target),
-                               rc = rc, ref = ref,
-                               match_label = match.label,
-                               mismatch_label = mismatch.label, 
-                               split.snv = split.snv,
-                               upstream.snv = upstream.snv,
-                               downstream.snv = downstream.snv,
-                               bpparam = bpparam)
-                               
-    if (isTRUE(verbose)) message("Counting variant combinations\n")
-    .self$.countCigars(cig_by_run)
-    .self$.getInsertions()
+    #cig_by_run <- .self$.setCigarLabels(renumbered = renumbered,
+    #                           target.loc = target.loc, 
+    #                           target_start = start(target), 
+    #                           target_end = end(target),
+    #                           rc = rc, ref = ref,
+    #                           match_label = match.label,
+    #                           mismatch_label = mismatch.label, 
+    #                           split.snv = split.snv,
+    #                           upstream.snv = upstream.snv,
+    #                           downstream.snv = downstream.snv,
+    #                           bpparam = bpparam)
+    #                           
+    #if (isTRUE(verbose)) message("Counting variant combinations\n")
+    #.self$.countCigars(cig_by_run)
+    #.self$.getInsertions()
   }, # -----
 
   # show -----
@@ -188,49 +188,23 @@ CrisprSet$methods(
   }, # -----
   
   # .setCigarLabels -----
-  .setCigarLabels = function(renumbered, target.loc, target_start = NA,
-                             target_end = NA, rc = FALSE, ref = NULL,
-                             match_label = "no variant",
-                             mismatch_label = "SNV", split.snv = TRUE,
-                             upstream.snv = 8, downstream.snv = 6,
-                             bpparam = BiocParallel::SerialParam()){
-    g_to_t <- NULL
-
-    if (isTRUE(renumbered)){
-      if (any(is.na(c(target_start, target_end, rc)))){
-        stop("Must specify target.loc (cut site), target_start, target_end and rc
-             for renumbering")
-      }
-      g_to_t <- .self$.genomeToTargetLocs(target.loc, target_start, target_end, 
-                             as.character(strand(.self$target)) %in% c("+", "*"))
-    }
+  setCigarLabels = function(labels = NULL, ...){
       
-    cut.site <- target.loc
-
-    # rc means "display on negative strand"
-    # If the guide is being displayed on the opposite strand, upstream and
-    # downstream are reversed
-    is_neg <- as.character(strand(target)) == "-"
-    if (! rc == is_neg){
-      temp <- upstream.snv
-      upstream.snv <- downstream.snv
-      downstream.snv <- upstream.snv
-      # In getCigarLabels, the target.loc is only used for the snv position
-      cut.site <- width(.self$target) - cut.site
-    }
-
-    # This section is slow
-    cig_by_run <- BiocParallel::bplapply(.self$crispr_runs,
-                             function(crun)  crun$getCigarLabels(
-                              target.loc = cut.site, genome_to_target = g_to_t,
-                              ref = .self$ref,
-                              separate.snv = split.snv,
-                              match.label = .self$pars$match_label,
-                              mismatch.label = .self$pars$mismatch_label,
-                              rc = rc, upstream = upstream.snv,
-                              downstream = downstream.snv), BPPARAM = bpparam)
-
-    cig_by_run
+      if (! is.null(labels)){
+        if (! lengths(labels) == lengths(alns(.self))){
+          stop("Lengths of labels not equal to length of alignments")
+        }
+        dummy <- lapply(seq_along(labels), function(i){
+          mcols(.self$crispr_runs[[i]])$allele <- labels[[i]]
+          .self$field("cigar_labels", labels)
+        })
+        cig_by_run <- labels
+      } else { 
+        cig_by_run <- .defaultCigarLabels(.self, ...)
+      }
+      .self$.countCigars(cig_by_run)
+      .self$.getInsertions()
+      cig_by_run
   }, # -----
 
   # .countCigars -----
@@ -394,27 +368,6 @@ Input parameters:
     el <- elementNROWS(ir)
     ir <- unlist(ir)
 
-    #co <- do.call(c, unlist(lapply(.self$crispr_runs, function(x){ 
-    #                        explodeCigarOps(cigar(x$alns))}),
-    #                        use.names = FALSE))[unique_cigars]
-    
-    #co <- do.call(c, unname(lapply(.self$crispr_runs, function(x){ 
-    #                        explodeCigarOps(cigar(x$alns))})))[unique_cigars]
-
-    #idxs <- co != "M"
-
-    #get_gr <- function(alns){
-    #  GenomicAlignments::cigarRangesAlongReferenceSpace(
-    #      GenomicAlignments::cigar(alns), pos = GenomicAlignments::start(alns))
-    #}
-
-    #ir <- do.call(c, unlist(lapply(.self$crispr_runs, function(x) get_gr(x$alns)),
-    #                        use.names = FALSE))
-
-    #ir <- ir[unique_cigars][idxs]
-    #names(ir) <- all_cigars[unique_cigars]
-    #ir <- unlist(ir)
-
     if (add_to_ins){
       ins_idxs <- names(ir) == "I"
       #ins_idxs <- unlist(co[idxs] == "I")
@@ -434,7 +387,6 @@ Input parameters:
   # filterVariants -----
   filterVariants = function(cig_freqs = NULL, names = NULL, columns = NULL,
                             include.chimeras = TRUE){
-
 '
 Description:
   Relabels specified variants in a table of variant allele counts as 

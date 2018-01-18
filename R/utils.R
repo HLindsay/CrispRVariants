@@ -341,6 +341,7 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'@param ops character(n) Which operations should be kept?
 #'@return The operations, as a CharacterList
 #'@author Helen Lindsay
+#'@rdname explodeCigarOpCombs
 .explodeCigarOpCombs <- function(cigar, ops = GenomicAlignments::CIGAR_OPS){
     wdths <- GenomicAlignments::explodeCigarOpLengths(cigar, ops = ops)
     keep.ops <- GenomicAlignments::explodeCigarOps(cigar, ops = ops)
@@ -356,16 +357,17 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'@param alns (GAlignments)
 #'@param ops  CIGAR operations to consider (Default: all)
 #'@param op.regions (GRanges) Return operations only in these regions
-#'@param snp.regions (GRanges) Return mismatches only in these regions
 #'@param pos An offset for the cigar ranges
 #'@return A GRanges list of opertion locations in reference space
 #'with a metadata column for the operation width in query space. 
 selectOps <- function(alns, ops = GenomicAlignments::CIGAR_OPS,
-                      op.regions = NULL, snp.regions = NULL, pos = 1L){
+                      op.regions = NULL, pos = 1L){
     cigs <- GenomicAlignments::cigar(alns)
     op_rngs <- cigarRangesAlongReferenceSpace(cigs, with.ops = TRUE,
                                               ops = ops, pos = pos)
     wdths <- explodeCigarOpLengths(cigs, ops = ops)
+    op_labs <- .explodeCigarOpCombs(cigs, ops)
+    
     temp <- unlist(op_rngs)
     mcols(temp)$qwidth <- unlist(wdths)
     op_rngs <- relist(temp, op_rngs)
@@ -374,7 +376,8 @@ selectOps <- function(alns, ops = GenomicAlignments::CIGAR_OPS,
     if (! is.null(op.regions)){
        # Check for consistency - should insertions on the right border be kept?
        keep_rngs <- relist(overlapsAny(unlist(op_rngs), op.regions), op_rngs)
-       op_rngs <- op_rngs[keep]
+       op_rngs <- op_rngs[keep_rngs]
+       op_labs <- op_labs[keep_rngs]
     }
-    op_rngs
+    list(op_rngs = op_rngs, op_labels = op_labs)
 } # -----

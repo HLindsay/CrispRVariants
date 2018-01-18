@@ -4,6 +4,8 @@
 
 \section{Changes in version 1.7.4}{
    \itemize{
+      \item Adds an option "style" to \code{plotAlignments} for colouring
+      only mismatch nucleotides
       \item Changes to \code{narrowAlignments} for PacBio cigar format
       \item Bug fix in \code{collapsePairs}.  Only occurred
       when running outside of \code{readsToTarget}.

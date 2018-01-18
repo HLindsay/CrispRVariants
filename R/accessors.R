@@ -204,8 +204,7 @@ setMethod("alns", signature("CrisprSet"),
           function(obj, ...){
             alns <- lapply(obj$crispr_runs, function(x) x$alns)
             GAlignmentsList(alns)
-          }) # -----
-
+}) # -----
 
 # alleles -----
 #'@title Get allele names 

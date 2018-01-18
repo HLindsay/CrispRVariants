@@ -89,7 +89,3 @@
   }
   TRUE
 } 
-
-#.chooseStrand <- function(){
-#  
-#}

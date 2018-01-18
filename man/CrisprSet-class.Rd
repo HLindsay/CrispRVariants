@@ -115,7 +115,8 @@ Input parameters:
 Return value:
   A named vector classifying variant alleles as insertions, deletions, etc}
 
-\item{\code{consensusAlleles(cig_freqs = .self$cigar_freqs, return_nms = TRUE)}}{Description:
+\item{\code{consensusAlleles(cig_freqs = .self$cigar_freqs, return_nms = TRUE,
+  match.ops = c("M", "X", "="))}}{Description:
 Get variants by their cigar string, make the pairwise alignments for the consensus
 sequence for each variant allele
 
@@ -123,6 +124,7 @@ Input parameters:
 cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs,
 but could also be filtered)
 return_nms: If true, return a list of sequences and labels (Default:FALSE)
+match.ops:  CIGAR operations for 1-1 alignments
 
 Return:
 A DNAStringSet of the consensus sequences for the specified alleles,

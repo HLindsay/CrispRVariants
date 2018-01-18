@@ -21,7 +21,8 @@ plotAlignments(obj, ...)
   plot.text.size = 2, axis.text.size = 8, legend.text.size = 6,
   highlight.guide = TRUE, guide.loc = NULL, tile.height = 0.55,
   max.insertion.size = 20, min.insertion.freq = 5, line.weight = 1,
-  legend.symbol.size = ins.size, add.other = FALSE, codon.frame = NULL)
+  legend.symbol.size = ins.size, add.other = FALSE, codon.frame = NULL,
+  style = c("all", "mismatches"))
 
 \S4method{plotAlignments}{DNAString}(obj, ..., alns, ins.sites,
   highlight.pam = TRUE, show.plot = FALSE, target.loc = 17,
@@ -117,6 +118,9 @@ in the legend.  (Default: ins.size)}
 
 \item{codon.frame}{Codon position of the leftmost nucleotide.  If provided,
 codon positions in the specified frame are indicated. (Default: NULL)}
+
+\item{style}{One of "all" (colour all tiles) and "mismatches" (colour
+only mismatch positions)}
 }
 \value{
 A ggplot2 figure
