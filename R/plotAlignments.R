@@ -98,6 +98,8 @@ setMethod("plotAlignments", signature("CrisprSet"),
 #'in the legend.  (Default: ins.size)
 #'@param codon.frame Codon position of the leftmost nucleotide.  If provided,
 #'codon positions in the specified frame are indicated. (Default: NULL)
+#'@param style One of "all" (colour all tiles) and "mismatches" (colour
+#'only mismatch positions)
 #'@rdname plotAlignments
 setMethod("plotAlignments", signature("character"),
   function(obj, ..., alns, ins.sites, highlight.pam = TRUE, show.plot = FALSE,
@@ -107,13 +109,17 @@ setMethod("plotAlignments", signature("character"),
            legend.text.size = 6, highlight.guide=TRUE, guide.loc = NULL,
            tile.height = 0.55, max.insertion.size = 20, min.insertion.freq = 5,
            line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE,
-           codon.frame = NULL){
+           codon.frame = NULL, style = c("all", "mismatches")){
 
 
   # Insertion locations are determined by matching ins.sites$cigar with names(alns)
   ref <- obj
+  plot_style <- match.arg(style)
+  colour_tiles <- ifelse(plot_style == "all", 
+                         setDNATileColours,
+                         setMismatchTileColours)
   m <- transformAlnsToLong(ref, alns, add.other = add.other)
-  m <- setDNATileColours(m)
+  m <- colour_tiles(m)
   nms <- m$Var1[1:(length(alns) + 1)]
 
   p <- makeAlignmentTilePlot(m, ref = ref, xlab = xlab,
@@ -330,7 +336,7 @@ addCodonFrame <- function(p, width, codon.frame){
     p <- p + theme(panel.grid = element_blank()) 
     codon_locs <- seq(codon.frame, width, by = 3)  
     p <- p + geom_vline(xintercept = codon_locs - 0.5, 
-               linetype = "dotted", color = "lightslategray", size = 0.5)
+               linetype = "dotted", color = "lightslategray", size = 0.7)
     p
 } # -----
 
@@ -366,32 +372,67 @@ transformAlnsToLong <- function(ref, alns, add.other = FALSE){
   m
 } # -----
 
+
+# .getDNAColours -----
+.getDNAColours <- function(x){
+    ambig_codes <- c('K','M','R','Y','S','W','B','V','H','D')
+    dna_chrs <- c(c("A", "C", "T", "G", "N", "-", ""),
+                  ambig_codes, c(">","<"))
+    extra <- setdiff(x, dna_chrs)
+    
+    cols <- c(c("#4daf4a", "#377eb8", "#e41a1c", "#000000", "#CCCCCC",
+                  "#FFFFFF", "#FFFFFF"), 
+                rep("#CCCCCC", length(ambig_codes) + 2),
+                rep("#FFFFFF", length(extra)))
+    names(cols) <- c(dna_chrs, extra)
+    cols
+} # -----
+
+
 # setDNATileColours -----
 #'@title Sets colours for plotting aligned DNA sequences.
 #'@description Sets tile colours for \code{\link[CrispRVariants]{plotAlignments}} with a
-#'DNA alphabet.  Colour names must be valid.
+#'DNA alphabet
 #'@param m A matrix with a column named "value" of the characters at each tile position.
 #'@return A matrix with additional columns specifying tile and text colours
 #'@author Helen Lindsay
 setDNATileColours <- function(m){
   m$value <- as.character(m$value)
-
-  ambig_codes <- c('K','M','R','Y','S','W','B','V','H','D')
-  dna_chrs <- c(c("A", "C", "T", "G", "N", "-", ""), ambig_codes, c(">","<"))
-  extra <- setdiff(m$value, dna_chrs)
-
-  m$value <- factor(m$value, levels = c(dna_chrs, extra))
+  #m$value <- factor(m$value, levels = c(dna_chrs, extra))
   m$isref <- as.character(ifelse(m$Var1 == "Reference", 1, 0.75))
-
-  m_cols <- c(c("#4daf4a", "#377eb8", "#e41a1c", "#000000", "#CCCCCC",
-                "#FFFFFF", "#FFFFFF"), 
-                 rep("#CCCCCC", length(ambig_codes) + 2),
-                 rep("#FFFFFF", length(extra)))
-  names(m_cols) <- levels(m$value)
+  m_cols <- .getDNAColours(m$value) 
   m$cols <- m_cols[m$value]
   m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
   return(m)
 } # -----
+
+
+# setMismatchTileColours -----
+#'@title Sets colours for plotting mismatches in aligned DNA sequences.
+#'@description Sets tile colours for \code{\link[CrispRVariants]{plotAlignments}} with a
+#'DNA alphabet.
+#'@param m A data frame of nucleotides and plotting locations, e.g. created
+#'by \code{\link[CrispRVariants]{transformAlnsToLong}}
+#'@return A matrix with additional columns specifying tile and text colours
+#'@author Helen Lindsay
+setMismatchTileColours <- function(m){
+    m$isref <- m$Var1 == "Reference"
+    mref <- m[m$isref,]
+    m$ref <- mref[match(m$Var2, mref$Var2), "value"]
+    m$cols <- "#FFFFFF"
+    dna_cols <- .getDNAColours(m$value)
+    # Use the IUPAC map as only nucleotide mismatches should be coloured
+    is_mm <- m$value %in% names(Biostrings::IUPAC_CODE_MAP) & !(m$value == m$ref)
+    m$value <- as.character(m$value)
+    m$cols[is_mm] <- dna_cols[m$value[is_mm]]
+    # Highlight the gaps in light gray as they aren't visible otherwise
+    m$cols[m$value == "-"] <- "#EAECEE" 
+    m$cols[m$Var1 == "Reference"] <- dna_cols[m[m$Var1 == "Reference", "value"]]
+    m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
+    m$ref <- NULL
+    return(m)
+} # -----
+
 
 # makeAlignmentTilePlot -----
 #'@title Internal CrispRVariants function for creating the plotAlignments background

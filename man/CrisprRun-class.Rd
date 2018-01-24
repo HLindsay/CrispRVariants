@@ -53,7 +53,8 @@ initialisation of a CrisprRun object.}
 \describe{
 \item{\code{getCigarLabels(target.loc, genome_to_target, ref, separate.snv, rc, match.label,
   mismatch.label, keep.ops = c("I", "D", "N"), upstream = 8,
-  downstream = min(6, width(ref) - cut_site))}}{Description:
+  downstream = min(6, width(ref) - cut_site), regions = NULL,
+  snv.regions = NULL)}}{Description:
   Sets the "cig_labels" field, returns the cigar labels.
 
 Input parameters:
@@ -69,12 +70,14 @@ Input parameters:
   keep.ops:         CIGAR operations to remain in the variant label
                     (usually indels)
   upstream:         distance upstream of the cut site to call SNVs
-  downstream:       distance downstream of the cut site to call SNVs}
+  downstream:       distance downstream of the cut site to call SNVs
+  regions:          IRanges(k) Regions for counting insertions and
+                    deletions.  Insertions on the right border are not
+                    counted.
+  snv.regions       Regions for calling SNVS}
 
 \item{\code{getInsertionSeqs(target)}}{Description:
-  Set the "insertions" field - a table of the locations of insertions,
-  and the "ins_key" field which relates sequences indices to the insertions 
-  they contain
+  Return a table relating insertion sequences to alignment indices
 Input parameters:}
 }}
 

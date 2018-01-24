@@ -6,7 +6,8 @@
 \usage{
 readTargetBam(file, target, exclude.ranges = GRanges(), exclude.names = NA,
   chimera.to.target = 5, chimeras = c("count", "ignore", "exclude",
-  "merge"), by.flag = TRUE, verbose = TRUE)
+  "merge"), max.read.overlap = 10, max.unmapped = 4, by.flag = TRUE,
+  verbose = TRUE)
 }
 \arguments{
 \item{file}{The name of a bam file to read in}
@@ -23,6 +24,12 @@ target.loc for assigning chimeras to targets (default: 5)}
 
 \item{chimeras}{Flag to determine how chimeric reads are treated.  One of
 "ignore", "exclude", "count" and "merge".  Default "ignore".}
+
+\item{max.read.overlap}{Maximum number of bases mapped to two positions
+for chimeras to be merged (Default: 10)}
+
+\item{max.unmapped}{Maximum number of bases that are unmapped for chimeras
+to be merged (Default: 4)}
 
 \item{by.flag}{Is the supplementary alignment flag set?  Used for identifying chimeric
 alignments, function is much faster if TRUE.  Not all aligners set this flag.  If FALSE,

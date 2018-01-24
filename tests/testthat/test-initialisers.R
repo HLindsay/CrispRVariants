@@ -38,7 +38,7 @@ test_that("readsToTargets correctly separates reads by PCR primer",{
     expect_equal(length(csets[[1]]$crispr_runs[[1]]$chimeras), 0)
 })
 
-
+# Construct data for checking SNVs -----
 bam <- system.file("extdata", "bam/ab1_ptena_wildtype_looking_embryo_1_s.bam",
                       package="CrispRVariants")
 reference <- Biostrings::DNAString("GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT")
@@ -56,7 +56,7 @@ mcols(snv)$seq <-  Biostrings::DNAStringSet(
                        "ACCTTGCAATCGTTCGGCTGGAAAGCCCATGGC",
                        "ACCGTCCAATCGTTCGGCTGGAAAGCCCATGGC",
                        "GCCATGGGCTTTCCAGCCGAACGATTGGAAGGT"))
-
+# ----
 
 test_that("Excluding reads by name works correctly", {
     # This bam file contains four non-chimeric and one chimeric read.
@@ -113,7 +113,6 @@ test_that("Mismatched reference and target detected",{
     expect_equal(mutationEfficiency(cset, snv = "exclude")[["ReadCount"]], 1)
   
 })
-
 
 test_that("readsToTargets (signature character) returns a list of CrisprSets",{
     # Here testing with a single bam, but should still run

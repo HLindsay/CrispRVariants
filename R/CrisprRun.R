@@ -1,3 +1,4 @@
+# CrisprRun class definition -----
 #'@title CrisprRun class
 #'@description A ReferenceClass container for a single sample of alignments narrowed
 #'to a target region.  Typically CrisprRun objects will not be accessed directly,
@@ -53,8 +54,9 @@ CrisprRun = setRefClass(
              cigar_labels = "character",
              chimeras = "GAlignments",
              chimera_combs = "data.frame")
-)
+) # -----
 
+# CrisprRun initializer -----
 CrisprRun$methods(
   initialize = function(bam, target, rc = FALSE, name = NULL,
                         chimeras = GenomicAlignments::GAlignments(),
@@ -62,11 +64,14 @@ CrisprRun$methods(
     
     # If no name is provided, use the coordinates
     if (is.null(name)){
+        cat(sprintf("target: %s\n", class(target)))
         name <<- sprintf("%s:%s-%s", seqnames(target), start(target), end(target))
     } else { name <<- name}
 
-    if (isTRUE(verbose)) message(sprintf("\nInitialising CrisprRun %s\n", .self$name))
-
+    if (isTRUE(verbose)){
+      message(sprintf("\nInitialising CrisprRun %s\n", .self$name))
+    }
+    
     alns <<- bam
     chimeras <<- chimeras
     chimera_combs <<- .self$.splitChimeras()
@@ -75,95 +80,42 @@ CrisprRun$methods(
 
     # recalculate genome.ranges in case of keep_unpaired = FALSE, not tested
     .self$getInsertionSeqs(target = target)
-  },
+  }, # -----
 
+  # show -----
   show = function(){
     print(c(class(.self), sprintf("CrisprRun object named %s, with %s on target alignments.",
                                   .self$name, length(.self$alns)), .self$alns))
-  },
+  }, # ------
 
-#  removeSeqs = function(idxs){
-#'
-#Description:
-#  Remove sequences from a CrisprRun object and from the internal CrisprRun
-#  fields that store insertion locations for plotting.
-#
-#Input parameters:
-#  idxs:     Indexes of reads to remove'
-#
-#    # note insertions table is not updated
-#    ins_key_idxs <- which(names(.self$ins_key) %in% idxs)
-#
-#    if (length(ins_key_idxs) > 0){
-#      .self$field("ins_key", .self$ins_key[-ins_key_idxs])
-#    }
-#
-#    # Insertion key refers to indexs with in the alignments, these have shifted after
-#    # filtering.  Note - would need to shift insertions idxs if insertions is also updated
-#    subtract <- rep(0, length(.self$alns))
-#    subtract[idxs] <- 1
-#    subtract <- cumsum(subtract)
-#
-#    temp <- .self$ins_key
-#    nm_as_num <- as.numeric(names(temp))
-#    names(temp) <- nm_as_num - subtract[nm_as_num]
-#    .self$field("ins_key", temp)
-#
-#    # Remove the extra sequences from the chimeras
-#    rm_by_nm <- names(alns)[idxs]
-#    ch_to_keep <- !(names(.self$chimeras) %in% rm_by_nm)
-#    .self$field("chimeras", .self$chimeras[ch_to_keep])
-#
-#    .self$field("alns", .self$alns[-idxs])
-#    .self$field("cigar_labels", .self$cigar_labels[-idxs])
-#  },
-
+  # getInsertionSeqs -----
   getInsertionSeqs = function(target){
 ' 
 Description:
-  Set the "insertions" field - a table of the locations of insertions,
-  and the "ins_key" field which relates sequences indices to the insertions 
-  they contain
+  Return a table relating insertion sequences to alignment indices
 Input parameters:
 '
-    # Note that the start of a ref_ranges insertion is its genomic end (rightmost base)
-
-    genome_ranges <- cigarRangesAlongReferenceSpace(cigar(.self$alns),
-                                     pos = start(.self$alns), ops = "I")
-    ref_ranges <- cigarRangesAlongReferenceSpace(cigar(.self$alns), ops = "I")
-    idxs <- rep(seq_along(ref_ranges), lengths(ref_ranges))
-    tseqs <- as.character(mcols(.self$alns)$seq)[idxs]
-
-    if (length(tseqs) == 0) {
-      return(NULL)
-    }
-
-    query_ranges <- cigarRangesAlongQuerySpace(cigar(.self$alns), ops = "I")
-    qranges <- unlist(query_ranges)
-
-    ins_seqs <- as.character(subseq(tseqs, start(qranges), end(qranges)))
-    ins_starts <- start(unlist(shift(genome_ranges, 1 - start(target))))
-    genomic_starts <- unlist(start(genome_ranges)) -1 # -1 for leftmost base
+    df <- getInsertionsTable(.self$alns, pos = start(target))
+    if (is.null(df)) {return(NULL)}
+    df$label <- .self$cigar_labels[df$idx]
     
-    df <- data.frame(start = ins_starts, seq = ins_seqs,
-            genomic_start = genomic_starts,
-            label = .self$cigar_labels[idxs], idxs)
-    df$seq <- as.character(df$seq)
-    agg <- aggregate(df$idx, by = as.list(df[,c(1:4)]), c)
+    agg <- aggregate(df$idx, by = as.list(df[,c(1:3,5)]), c)
     agg$count <- lengths(agg$x)
     colnames(agg) <- c("start", "seq", "genomic_start",
                        "cigar_label", "idxs", "count")
     return(agg)
-  },
+  }, # -----
 
+  # .checkNonempty -----
   .checkNonempty = function(){
     if (length(.self$alns) == 0){
       message("No on target alignments")
       return(FALSE)
     }
     TRUE
-  },
+  }, # -----
 
+  # splitChimeras -----
   .splitChimeras = function(){
     splits <- split(cigar(.self$chimeras), names(.self$chimeras))
     if (length(splits) == 0) return(data.frame())
@@ -171,18 +123,21 @@ Input parameters:
     tt <- as.data.frame(table(combination))
     tt <- tt[order(tt$Freq, decreasing = TRUE),]
     tt
-  },
+  }, # -----
 
-
-  getCigarLabels = function(target.loc, genome_to_target, ref,
+  # getCigarLabels -----
+  getCigarLabels = function(target, target.loc, genome_to_target, ref,
                             separate.snv, rc, match.label, mismatch.label,
-                            keep.ops = c("I","D","N"), upstream = 8,
-                            downstream = min(6, width(ref) - cut_site)){
+                            keep.ops = c("I","D","N"),
+                            upstream = min(target.loc, 8),
+                            downstream = min(6, width(ref) - target.loc),
+                            regions = NULL, snv.regions = NULL){
     '
 Description:
   Sets the "cig_labels" field, returns the cigar labels.
 
 Input parameters:
+  target:           (GRanges) the counting region.
   target.loc:       The location of the cut site with respect to the target
   genome_to_target: A vector with names being genomic locations and values
                     being locations with respect to the cut site
@@ -195,108 +150,102 @@ Input parameters:
   keep.ops:         CIGAR operations to remain in the variant label
                     (usually indels)
   upstream:         distance upstream of the cut site to call SNVs
-  downstream:       distance downstream of the cut site to call SNVs'
+  downstream:       distance downstream of the cut site to call SNVs
+  regions:          IRanges(k) Regions for counting insertions and
+                    deletions.  Insertions on the right border are not
+                    counted.
+  snv.regions       Regions for calling SNVS'
     
-    cigs <- GenomicAlignments::cigar(.self$alns)
-    wdths <- GenomicAlignments::explodeCigarOpLengths(cigs)
-    ops <- GenomicAlignments::explodeCigarOps(cigs)
-    temp <- CharacterList(relist(paste0(unlist(wdths), unlist(ops)), wdths))
-    ops <- CharacterList(ops)
-    keep <- ops %in% keep.ops
-
-    rranges <- cigarRangesAlongReferenceSpace(cigs, pos = start(.self$alns),
-                                              ops = keep.ops)
-    # here get snvs, add snv ops
-
-    if (isTRUE(rc)){
-      glocs <- end(rranges)
-    } else {
-      glocs <- start(rranges)
-    }
     
-    # Add location to cigar operations
-    temp <- paste(genome_to_target[as.character(unlist(glocs))],
-                  unlist(temp[keep]), sep = ":")
+    # Find indels
+    labels <- indelLabels(.self$alns, rc,
+                          genome.to.pos = genome_to_target)
+    
+    relative_start <- target.loc - upstream + 1
+    relative_end <- target.loc + downstream
+    regions <- IRanges(relative_start,relative_end)
         
-    temp <- as.list(relist(temp, IRanges::PartitioningByEnd(cumsum(sum(keep)))))
-          
-    complex <- sum(keep) > 1
-
-    if (isTRUE(rc)){
-      temp[complex] <- sapply(temp[complex], function(x) paste(rev(x), collapse = ","))
-    } else {
-      temp[complex] <- sapply(temp[complex], base::paste, collapse = ",")
+    # Find snvs
+    
+    if (any(labels == "")){
+      mm_labs <- mismatchLabels(.self$alns[labels == ""], target, ref, 
+                       regions = IRanges(relative_start, relative_end), 
+                       genome.to.pos = genome_to_target)
+    
+      labels[labels == ""] <- mm_labs  
     }
     
+    # Remaining are either no variant or partial
+    
+    # Adjust cigar for partial alignments
     spans <- width(.self$alns) == nchar(ref) 
-    temp[sum(keep) == 0 & spans] <- match.label
-    temp[sum(keep) == 0 & ! spans] <- cigs[sum(keep) == 0 & ! spans]
-
-    renamed <- as.character(temp)
+    labels[labels == "" & spans] <- match.label
+    labels[labels == "" & !spans]  <- cigar(.self$alns)[labels == "" & ! spans]
     
-    if (isTRUE(separate.snv)){
-      renamed <- .self$.splitNonIndel(ref, renamed, rc, match_label = match.label,
-                                    mismatch_label = mismatch.label,
-                                    cut_site = target.loc, upstream = upstream,
-                                    downstream = downstream)
-    }
+    .self$field("cigar_labels", labels)
+    mcols(.self$alns)$"allele" = labels
+    labels
 
-    .self$field("cigar_labels", renamed)
-    
-    #__________
+    ## Adjust cigar for partial alignments
+    #spans <- width(.self$alns) == nchar(ref) 
+    #temp[ops_per_aln == 0 & spans] <- match.label
+    #temp[ops_per_aln == 0 & ! spans] <- cigs[ops_per_aln == 0 & ! spans]
+#
+     #__________
     # Check if partial alns starting from different places have same labels
-    strts <- start(.self$alns)[sum(keep) == 0 & ! spans]
-    temp <- split(strts, renamed[sum(keep) == 0 & ! spans])
-    if (! all(lengths(lapply(temp, unique)) == 1) ){
-       rn <- unlist(renamed[sum(keep) == 0 & ! spans]) 
-       gen_strt <- genome_to_target[as.character(unlist(temp))]
-        
-    }
+    #strts <- start(.self$alns)[ops_per_aln == 0 & ! spans]
+    #temp <- split(strts, renamed[ops_per_aln == 0 & ! spans])
+    #if (! all(lengths(lapply(temp, unique)) == 1) ){
+    #   rn <- unlist(renamed[ops_per_aln == 0 & ! spans]) 
+    #   gen_strt <- genome_to_target[as.character(unlist(temp))]
+    #    
+    #}
     
-    renamed
-  },
+    #renamed
+  } # -----
 
-  .splitNonIndel = function(ref, cig_labels, rc, match_label = "no variant",
-                          mismatch_label = "SNV", cut_site = 17,
-                          upstream = 8, downstream = 6){
-
-    # NOTE: SNVS not called in partial alignments
-    # Only consider mismatches up to (upstream) to the left of the cut and
-    # (downstream) to the right of the cut
-    # The cut site is between cut_site and cut_site + 1
-    upstream = min(cut_site, upstream)
-    downstream = min(downstream, nchar(ref) - cut_site)
-    
-    is_match <- cig_labels == match_label
-    
-    # If negative strand, rc reference for checking identity
-    # Sequences are later reverse complemented to match the ref
-    test_ref <- ref 
-    if(isTRUE(rc)){ test_ref <- Biostrings::reverseComplement(test_ref)}
-    no_var <- which(is_match & mcols(.self$alns)$seq != test_ref)
-    
-    if (length(no_var) == 0) return(cig_labels)
-  
-    if ((cut_site-upstream + 1) < 0 | (cut_site + downstream) > length(ref)){
-      stop("Specified range for detecting SNVs is greater than target range")
-    }
-  
-    snv_range <- c((cut_site-upstream + 1):(cut_site + downstream))
-    sqs <- mcols(.self$alns)$seq[no_var]
-    if (isTRUE(rc)) sqs <- reverseComplement(sqs)
-  
-    no_var_seqs <- as.matrix(sqs)
-    no_var_seqs <- no_var_seqs[,snv_range, drop = FALSE]
-  
-    rr <- strsplit(as.character(ref[snv_range]), "")[[1]]
-    result <- apply(no_var_seqs, 1, function(x){
-      snvs <- which((x != rr & x != "N")) - upstream - 1
-      snvs[snvs >= 0] <- snvs[snvs >= 0] + 1
-      sprintf("%s:%s", mismatch_label, paste(snvs, collapse = ","))
-    })
-    result[result == sprintf("%s:", mismatch_label)] <- match_label
-    cig_labels[no_var] <- result
-    cig_labels
-    }
+  # .splitNonIndel -----
+#  .splitNonIndel = function(ref, cig_labels, rc, match_label = "no variant",
+#                          mismatch_label = "SNV", cut_site = 17,
+#                          upstream = 8, downstream = 6){
+#
+#    # NOTE: SNVS not called in partial alignments
+#    # Only consider mismatches up to (upstream) to the left of the cut and
+#    # (downstream) to the right of the cut
+#    # The cut site is between cut_site and cut_site + 1
+#    upstream = min(cut_site, upstream)
+#    downstream = min(downstream, nchar(ref) - cut_site)
+#    
+#    is_match <- cig_labels == match_label
+#    
+#    # If negative strand, rc reference for checking identity
+#    # Sequences are later reverse complemented to match the ref
+#    test_ref <- ref 
+#    if(isTRUE(rc)){ test_ref <- Biostrings::reverseComplement(test_ref)}
+#    no_var <- which(is_match & mcols(.self$alns)$seq != test_ref)
+#    
+#    if (length(no_var) == 0) return(cig_labels)
+#  
+#    if ((cut_site-upstream + 1) < 0 | (cut_site + downstream) > length(ref)){
+#      stop("Specified range for detecting SNVs is greater than target range")
+#    }
+#  
+#    snv_range <- c((cut_site-upstream + 1):(cut_site + downstream))
+#    sqs <- mcols(.self$alns)$seq[no_var]
+#    if (isTRUE(rc)) sqs <- reverseComplement(sqs)
+#  
+#    no_var_seqs <- as.matrix(sqs)
+#    no_var_seqs <- no_var_seqs[,snv_range, drop = FALSE]
+#  
+#    rr <- strsplit(as.character(ref[snv_range]), "")[[1]]
+#    result <- apply(no_var_seqs, 1, function(x){
+#      snvs <- which((x != rr & x != "N")) - upstream - 1
+#      snvs[snvs >= 0] <- snvs[snvs >= 0] + 1
+#      sprintf("%s:%s", mismatch_label, paste(snvs, collapse = ","))
+#    })
+#    result[result == sprintf("%s:", mismatch_label)] <- match_label
+#    cig_labels[no_var] <- result
+#    cig_labels
+#    } # -----
 
 )

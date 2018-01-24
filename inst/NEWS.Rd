@@ -2,6 +2,26 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.5}{
+   \itemize{
+      \item Added \code{create.plot} argument for \code{plotFreqHeatmap}
+      with signature \code{CrisprSet}.
+      \item Adds an option "style" to \code{plotAlignments} for colouring
+      only mismatch nucleotides
+      \item Changes to \code{narrowAlignments} for PacBio cigar format
+      \item Bug fix in \code{collapsePairs}.  Only occurred
+      when running outside of \code{readsToTarget}.
+      \item Adds "alleles" accessor for relating variant labels
+      to the truncated cigar strings
+      \item Return unmergeable alignments instead of raising an error
+      \item Minor code changes to make it easier to run a
+      non-standard counting pipeline
+      \item Code from initialisers split into separate files for 
+      easier readability
+  }
+}
+
+
 \section{Changes in version 1.7.4}{
    \itemize{
       \item Added \code{create.plot} argument for \code{plotFreqHeatmap}

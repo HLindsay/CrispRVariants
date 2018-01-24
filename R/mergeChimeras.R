@@ -93,8 +93,29 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
     rearr <- c(1, rearr)
     rearr[change_pts] <- 1
     rearr <- rearr < 0
-
-    mergeable <- one_chr & same_strd & has_genome_gap & has_read_gap & !rearr
+    
+    # Remove sections of a read that map to two genomic locations
+    # - identify reads with negative gap = overlap between segments
+    read_gaps <- c(0, first_aligned[-1] - last_aligned[-length(last_aligned)] - 1)
+    read_gaps[change_pts] <- 0
+    to_cut <- read_gaps < 0
+    
+    # Start constructing new cigars and test for gaps in cut sections
+    ch_ends <- cumsum(nms$lengths)
+    new_cigars <- GenomicAlignments::cigarNarrow(cigars, start = 1,
+                                                 end = width(bam[chimera_idxs]))
+    new_cigars <- as.character(new_cigars)
+    
+    first_range <- as.numeric(gsub('M.*', "", new_cigars[to_cut]))
+    # Cut overlap off rightmost read, adjust genomic coordinates
+    first_range <- first_range + read_gaps[to_cut]
+      
+    # Remove reads with indels in the segment to exclude.
+    rm_nms <- inverse.rle(nms)[which(to_cut)[which(first_range < 0)]]
+    indel_in_cut <- names(bam[chimera_idxs]) %in% rm_nms
+  
+    mergeable <- one_chr & same_strd & has_genome_gap &
+                 has_read_gap & !rearr & ! indel_in_cut
     
     chimeras <- bam[chimera_idxs][mergeable]
     chimeras <- chimeras[!duplicated(names(chimeras))] # select the leftmost
@@ -137,34 +158,14 @@ mergeChimeras <- function(bam, chimera_idxs = NULL, verbose = TRUE,
       mrg, format_zero(mrg/noc*100))) 
     }
     
-    ch_ends <- cumsum(nms$lengths)
-    new_cigars <- as.character(GenomicAlignments::cigarNarrow(cigars, start = 1,
-                              end = width(bam[chimera_idxs])))
-
     # For first member of chimera: get everything up to and including the last M
     new_cigars[change_pts] <- gsub("(^.*M)[0-9]+[HS]","\\1", cigars[change_pts])
     # For last member of chimera: get everything except for clipping at the start
     new_cigars[ch_ends] <- gsub("H","S",gsub("^[0-9]+[HS](.*)", "\\1", cigars[ch_ends]))
-
-    # Remove sections of a read that map to two genomic locations
-    # - identify reads with negative gap = overlap between segments
-    read_gaps <- c(0,first_aligned[-1] -  last_aligned[-length(last_aligned)] - 1)
-    read_gaps[change_pts] <- 0
-    to_cut <- read_gaps < 0
-
-    first_range <- as.numeric(gsub('M.*', "", new_cigars[to_cut]))
-    # Cut overlap off rightmost read, adjust genomic coordinates
-    first_range <- first_range + read_gaps[to_cut]
-    # Make sure range is still positive
-    if (any(first_range < 0)){
-      stop(paste0("Multimapping segment of read includes indels",
-                  "This case is not implemented yet, ",
-                  "chimeras cannot be merged."))
-    }
-
+    
     new_cigars[to_cut] <- paste0(first_range, gsub('[0-9]+(M.*)', "\\1",
-                                 new_cigars[to_cut]))
-
+                                                   new_cigars[to_cut]))
+    
     # Stick cigars together padding segments with deletions
     
     ch_gstarts <- start(bam)[chimera_idxs]
