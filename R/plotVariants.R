@@ -266,7 +266,7 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
     max_end <- max(all_exs$end)
 
     tcks <- unname(quantile(min_st:max_end, seq(1,100, by = 2)*0.01))
-    tcks <- lapply(gene_spans, function(sp){
+    tcks <- lapply(as(gene_spans, "GRangesList"), function(sp){
       tcks[tcks > start(sp) & tcks < end(sp)]
     })
 
