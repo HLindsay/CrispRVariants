@@ -294,7 +294,7 @@ matchLabels <- function(alns, target, match.label = "No variant"){
 #'@param mismatch.label  (Character(1)) Prefix for single nucleotide
 #'variants (Default: SNV:)
 #'@param ...  Extra arguments for individual counting functions
-#'@result A list of labels for the reads in alns
+#'@return A list of labels for the reads in alns
 alleleLabels <- function(alns, target, reference,
                          indel.ranges = NULL, indel.freq = NULL,
                          snp.ranges = NULL, snp.freq = NULL,

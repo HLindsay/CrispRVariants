@@ -57,4 +57,7 @@ and mismatch base
 \description{
 Internal CrispRVariants function for creating allele
 labels given variants and positions
+
+Assume that the reference may be on the negative strand and
+regions are given with respect to the reference sequence.
 }

@@ -30,6 +30,9 @@ variants (Default: SNV:)}
 
 \item{...}{Extra arguments for individual counting functions}
 }
+\value{
+A list of labels for the reads in alns
+}
 \description{
 Developmental function for more flexible labeling
 of variant alleles

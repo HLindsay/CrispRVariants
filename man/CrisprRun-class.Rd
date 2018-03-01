@@ -53,8 +53,8 @@ initialisation of a CrisprRun object.}
 \describe{
 \item{\code{getCigarLabels(target, target.loc, genome_to_target, ref, separate.snv, rc,
   match.label, mismatch.label, keep.ops = c("I", "D", "N"),
-  upstream = min(target.loc, 8), downstream = min(6, width(ref) -
-  target.loc), regions = NULL, snv.regions = NULL)}}{Description:
+  upstream = min(target.loc, 8), downstream = min(6, width(ref) - target.loc
+  + 1), regions = NULL, snv.regions = NULL)}}{Description:
   Sets the "cig_labels" field, returns the cigar labels.
 
 Input parameters:

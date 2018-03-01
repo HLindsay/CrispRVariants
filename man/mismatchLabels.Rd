@@ -5,7 +5,7 @@
 \title{nonindelLabels}
 \usage{
 mismatchLabels(alns, target, ref.seq, regions = NULL, min.pct = 0,
-  mismatch.label = "SNV:", genome.to.pos = NULL, as.string = TRUE)
+  mismatch.label = "SNV", genome.to.pos = NULL, as.string = TRUE)
 }
 \arguments{
 \item{alns}{A GAlignments object, where the aligned sequences should span the
