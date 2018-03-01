@@ -629,7 +629,8 @@ alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
       crispr.runs <- crispr.runs[!to_rm]
       names <- names[!to_rm]
       if (length(crispr.runs) == 0) {
-        warning("Could not narrow reads to target, no samples have on-target alignments")
+        warning("Could not narrow reads to target, ",
+                "no samples have on-target alignments")
         return()
       }
     }
@@ -640,7 +641,7 @@ alnsToCrisprSet <- function(alns, reference, target, reverse.complement,
                       verbose = verbose, names = names, ...)
     
     # Set the allele labels
-    if (isTRUE(allele.labels)){
+    if (isTRUE(allele.labels) & ! all(lengths(alns(cset)) == 0)){
         cig_labs_defaults = list(renumbered = TRUE,
                                  match_label = "no variant",
                                  mismatch_label = "SNV",

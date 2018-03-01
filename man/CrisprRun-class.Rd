@@ -51,13 +51,14 @@ initialisation of a CrisprRun object.}
 \section{Methods}{
 
 \describe{
-\item{\code{getCigarLabels(target.loc, genome_to_target, ref, separate.snv, rc, match.label,
-  mismatch.label, keep.ops = c("I", "D", "N"), upstream = 8,
-  downstream = min(6, width(ref) - cut_site), regions = NULL,
-  snv.regions = NULL)}}{Description:
+\item{\code{getCigarLabels(target, target.loc, genome_to_target, ref, separate.snv, rc,
+  match.label, mismatch.label, keep.ops = c("I", "D", "N"),
+  upstream = min(target.loc, 8), downstream = min(6, width(ref) -
+  target.loc), regions = NULL, snv.regions = NULL)}}{Description:
   Sets the "cig_labels" field, returns the cigar labels.
 
 Input parameters:
+  target:           (GRanges) the counting region.
   target.loc:       The location of the cut site with respect to the target
   genome_to_target: A vector with names being genomic locations and values
                     being locations with respect to the cut site

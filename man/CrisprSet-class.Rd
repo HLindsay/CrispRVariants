@@ -36,15 +36,6 @@ the target.loc is base 17 (default: 17)}
 \item{mismatch.label}{Label for sequences with only single nucleotide variants
 (default: "SNV")}
 
-\item{split.snv}{Should single nucleotide variants (SNVs) be shown for
-reads without an insertion or deletion? (default: TRUE)}
-
-\item{upstream.snv}{If split.snv = TRUE, how many bases upstream of the target.loc
-should SNVs be shown?  (default: 8)}
-
-\item{downstream.snv}{If split.snv = TRUE, how many bases downstream of the target.loc
-should SNVs be shown? (default: 6)}
-
 \item{bpparam}{A BiocParallel parameter object specifying how many cores to use.
 The parallelisable step is calling SNVs. Parallelisation is by sample.
 (default: SerialParam, i.e. no parallelization)}
@@ -166,7 +157,7 @@ Input parameters:
   x.axis.title = NULL, x.angle = 90, min.freq = 0, min.count = 0,
   top.n = nrow(.self$cigar_freqs), type = c("counts", "proportions"),
   header = c("default", "counts", "efficiency"), order = NULL,
-  alleles = NULL, ...)}}{Description:
+  alleles = NULL, create.plot = TRUE, ...)}}{Description:
     Internal method for CrispRVariants:plotFreqHeatmap, optionally filters the table
     of variants, then a table of variant counts, coloured by counts or proportions.
 
@@ -192,6 +183,8 @@ Input parameters:
     alleles:      Names of alleles to include.  Selection of alleles takes
                   place after filtering (Default: NULL).
     exclude:      Names of alleles to exclude (Default: NULL)
+    create.plot:  Should the plot be created (TRUE, default), or the data used in
+                  the plot returned.
     ...:          Extra filtering or plotting options
 
 Return value:

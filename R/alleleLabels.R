@@ -74,11 +74,11 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
     
     # MAKE CONSISTENT: USE GENOMIC OR RELATIVE COORDS
     cigs <- GenomicAlignments::cigar(alns)
-    op_locs <- selectOps(alns, ops = keep.ops,
+    op_locs <- selectOps(cigs, ops = keep.ops,
                          op.regions = regions,
                          pos = start(alns))
     
-    position <- ifelse(isTRUE(rc), "start", "end")
+    position <- ifelse(isTRUE(rc), "end", "start")
     op_labs <- .formatVarLabels(op_locs$op_rngs, op_locs$op_labels,
                                 position = position,
                                 genome.to.pos = genome.to.pos, ...)
@@ -91,7 +91,7 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
 # the reverse complement when finding mismatches using the bam file
 .resolveRefStrand <- function(strand, reference){
     if (strand == "*") strand <- "+"
-    if (! strand %in% c("+","-")){
+    if (! strand %in% c("+","-","*")){
       stop('Strand should be either "+" or "-"')
     }
     # If reference is negative, use the positive to match bam format
@@ -105,6 +105,8 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
 # As only a single reference is provided, assume that alns start and end 
 # at the same position
 #'@title findMismatches
+#'@description Assume that the reference may be on the negative strand and
+#'regions are given with respect to the reference sequence.
 #'@param alns A GAlignments object, where the aligned sequences should span the
 #'reference sequence
 #'@param ref.start (numeric(1)) The genomic start position of the reference sequence
@@ -126,9 +128,7 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
     # Using a single reference, rather than a reference per region,
     # as CrispRVariants considers variants within individual reads 
     # Sequences with deletions do not count towards min.pct for each column
-  
-    strand <- as.character(strand)
-    ref.seq <- .resolveRefStrand(strand, ref.seq)
+ 
     rwdth = nchar(ref.seq)
     
     # Check that regions are within the reference range
@@ -136,7 +136,18 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
       if (! all(regions %within% IRanges(1, rwdth))){
         stop("Region for counting mismatches longer than reference sequence")
       }
+      # Convert regions to positive strand if they are negative
+      if (as.character(strand) == "-"){
+        temp <- structure(rev(1:nchar(ref.seq)), names = 1:nchar(ref.seq))
+        strt <- temp[as.character(start(regions))]
+        end <- temp[as.character(end(regions))]
+        regions <- IRanges(end, strt)
+      }
     }
+    
+    # As the alignments are to the +ve strand, get the +ve strand reference
+    strand <- as.character(strand)
+    ref.seq <- .resolveRefStrand(strand, ref.seq)
     
     # Get sequences aligned to the reference region, i.e. insertions ignored
     sqs <- sequenceLayer(mcols(alns)$seq, cigar(alns))
@@ -148,7 +159,6 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
                           Rpadding.letter = "N")
     }
 
-    
     # Positions will be used for the labels
     posns <- ref.start:(ref.start + rwdth - 1)
     names(posns) <- 1:rwdth
@@ -168,10 +178,17 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
     is_base <- matrix(sqsm %in% c("A","C","T","G"), nrow = nrow(sqsm))
     snv <- is_base & ! eq_ref
     wh.snv <- which(snv, arr.ind = TRUE)
+    if (strand == "-"){
+      rc_base <- as.character(reverseComplement(DNAStringSet(sqsm[snv])))
+      result <- data.frame(seq = wh.snv[,1],
+                           pos = posns[wh.snv[,2]],
+                           base = rc_base)
+    } else {
+      result <- data.frame(seq = wh.snv[,1],
+                           pos = posns[wh.snv[,2]],
+                           base = sqsm[snv])      
+    }
 
-    result <- data.frame(seq = wh.snv[,1],
-                         pos = posns[wh.snv[,2]],
-                         base = sqsm[snv])
     result <- result[order(result$seq), ]
     
     if (min.pct > 0){
@@ -211,10 +228,10 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
 #'and mismatch base
 mismatchLabels <- function(alns, target, ref.seq, 
                            regions = NULL, min.pct = 0,
-                           mismatch.label = "SNV:",
+                           mismatch.label = "SNV",
                            genome.to.pos = NULL,
                            as.string = TRUE){
-    
+
     mm <- .findMismatches(alns, ref.seq = ref.seq,
                           ref.start = start(target),
                           regions = regions,
@@ -230,15 +247,15 @@ mismatchLabels <- function(alns, target, ref.seq,
       mm$pos <- genome.to.pos[as.character(mm$pos)]
     } 
     
-    mm_labs <- paste(mm$pos, mm$base, sep = ":")
+    mm_labs <- paste0(mm$pos, mm$base)
     temp <- split(mm_labs, mm$seq)
     temp <- relist(unlist(unname(temp)),
                    PartitioningByWidth(lengths(temp)))
     
     if (isTRUE(as.string)){
-      temp <- paste(temp, collapse = "")
+      temp <- paste(temp, collapse = ",")
       tnms <- names(temp)
-      temp <- paste(mismatch.label, temp, sep = "")
+      temp <- paste(mismatch.label, temp, sep = ":")
       names(temp) <- tnms
     }
     
@@ -263,17 +280,15 @@ matchLabels <- function(alns, target, match.label = "No variant"){
 }
 
 
-
-
 #'@title alleleLabels
 #'@description  Developmental function for more flexible labeling
 #'of variant alleles
-#'@param alns
-#'@param target
-#'@param indel.ranges
-#'@param indel.freq
-#'@param snp.ranges
-#'@param genome.to.pos
+#'@param alns (GenomicAlignments)
+#'@param target (GRanges(1))
+#'@param indel.ranges (IRanges)
+#'@param indel.freq (numeric)
+#'@param snp.ranges (IRanges)
+#'@param genome.to.pos (numeric)
 #'@param novar.label  (Character(1)) Label for non-variant reads
 #'(Default: No variant)
 #'@param mismatch.label  (Character(1)) Prefix for single nucleotide
@@ -306,6 +321,7 @@ alleleLabels <- function(alns, target, reference,
                                bpparam = BiocParallel::SerialParam()){
   
   # Are the match and mismatch labels already set in the cset?
+  if (all(lengths(alns(cset))) == 0) return(NULL)
   
   g_to_t <- NULL
   target.loc = cset$pars$target.loc
@@ -316,32 +332,22 @@ alleleLabels <- function(alns, target, reference,
   
   if (isTRUE(renumbered)){
     if (any(is.na(c(target_start, target_end, rc)))){
-      stop("Must specify target.loc (cut site), target_start, target_end and rc
-           for renumbering")
+      stop("Must specify target.loc (cut site), target_start,
+           target_end and rc for renumbering")
     }
+
     g_to_t <- cset$.genomeToTargetLocs(target.loc, target_start, target_end, 
                      as.character(strand(cset$target)) %in% c("+", "*"))
-    }
-  
-  cut.site <- target.loc
-  
-  # rc means "display on negative strand"
-  # If the guide is being displayed on the opposite strand, upstream and
-  # downstream are reversed
-  is_neg <- as.character(strand(cset$target)) == "-"
-  if (! rc == is_neg){
-    temp <- upstream.snv
-    upstream.snv <- downstream.snv
-    downstream.snv <- upstream.snv
-    # In getCigarLabels, the target.loc is only used for the snv position
-    cut.site <- width(cset$target) - cut.site
   }
   
+  # rc means "display on negative strand"
+  # Reversing ranges is dealt with in .findMismatches
+
   # This section is slow
   cig_by_run <- BiocParallel::bplapply(cset$crispr_runs,
                          function(crun)  crun$getCigarLabels(
                            target = cset$target,
-                           target.loc = cut.site,
+                           target.loc = target.loc, #cut.site,
                            genome_to_target = g_to_t,
                            ref = ref,
                            separate.snv = split.snv,

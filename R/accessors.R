@@ -233,7 +233,8 @@ setMethod("alleles", signature("CrisprSet"),
                                            "[[", "cigar_labels")))
             result <- data.frame(label = as.character(labels), 
                                  cigar = as.character(cigars),
-                                 genomic.loc = start(alns))
+                                 genomic.loc = start(alns),
+                                 stringsAsFactors = FALSE)
             result <- unique(result)
             result  
 })

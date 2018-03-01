@@ -70,32 +70,52 @@ test_that("Excluding reads by name works correctly", {
     expect_equal(length(cset$crispr_runs[[1]]$chimeras), 2)
 })
 
-test_that("Arguments for calling SNVs are passed on",{
-    # There is a nucleotide change 19 bases upstream of the cut site
+
+test_that("Ambiguous nucleotides are not considered SNVs",{
+    # There is an ambiguous nucleotide 19 bases upstream of the cut site
     # in one of these sequences
-    
-    # With default settings, the snv should not be called
     cset <- readsToTarget(bam, target = gdl, reference = reference,
-             target.loc = 22)
+                          target.loc = 22, upstream.snv = 18)
+    expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 0)
+})
+
+
+test_that("Arguments for calling SNVs are passed on",{
+    # There is a nucleotide mismatch at position 19 upstream of target.loc
+    
+    # Counting 7 bases downstream, no SNVs are present
+    cset <- readsToTarget(bam, target = gdl, reference = reference,
+                          target.loc = 22, downstream.snv = 7)
     expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 0)
 
     # Re-initialise increasing detection window.
-    # One sequence should now have a SNV
+    # SNV should now be detected
     cset <- readsToTarget(bam, target = gdl, reference = reference,
-           target.loc = 22, upstream.snv = 20)
+                          target.loc = 22, upstream.snv = 19)
     expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 1)
-
+    
+    # Check that large detection ranges don't cause and error
+    cset <- readsToTarget(bam, target = gdl, reference = reference,
+                          target.loc = 22, upstream.snv = 30,
+                          downstream.snv = 40)
+    expect_equal(length(grep("SNV", cset$crispr_runs[[1]]$cigar_labels)), 1)
+    
     # More checking with constructed alignments
     snv <- GenomicAlignments::GAlignmentsList(sample1 = as(snv, "GAlignments"))
-    cset <- readsToTarget(snv, target = gdl, reference = reference, target.loc = 22)
+    cset <- readsToTarget(snv, target = gdl,
+                          reference = reference,
+                          target.loc = 22)
     
-    # Test that variant at position 7 downstream is not counted
-    expect_true(all(c("SNV:-8","SNV:6") %in% rownames(variantCounts(cset))))
+    # Test that variant at position 8 downstream is not counted
+    expect_true(all(c("SNV:-8G", "SNV:6C") %in%
+                      rownames(variantCounts(cset))))
+
     expect_equal(variantCounts(cset)["no variant",], 2)
     
     # With changed parameters, neither of these SNVs are counted
-    cset2 <- readsToTarget(snv, target = gdl, reference = reference, target.loc = 22,
-                           upstream = 7, downstream = 5)
+    cset2 <- readsToTarget(snv, target = gdl, reference = reference,
+                           target.loc = 22, upstream.snv = 7,
+                           downstream.snv = 5)
     expect_equal(variantCounts(cset2)["no variant",], 4)
     
 })
@@ -152,4 +172,5 @@ test_that("Strand is chosen correctly", {
 # test separateChimeras that guide within chimera is not chimeric
 # test function of chimera.to.target
 # test chimera options "count","exclude","ignore", "merge"
+# test snvs with indels
 

@@ -233,6 +233,8 @@ dispatchDots <- function(func, ..., call = FALSE){
       warning("dispatchDots may not work as expected with S4 functions")
     }
     func_defaults <- formals(func)
+    #dots <- as.list(...)
+    #print(dots)
     
     result <- utils::modifyList(func_defaults, list(...))[names(func_defaults)]
     if (isTRUE(call)) return(do.call(func, result))
@@ -354,19 +356,28 @@ dispatchDots <- function(func, ..., call = FALSE){
 # selectOps -----
 #'@title selectOps
 #'@description select CIGAR operations in a region of interest.
-#'@param alns (GAlignments)
+#'@author Helen Lindsay
+#'@rdname selectOps
+setGeneric("selectOps", function(cigar, ...) {
+  standardGeneric("selectOps")})
+
+
+# selectOps -----
+#'@param cigar CIGAR strings
 #'@param ops  CIGAR operations to consider (Default: all)
 #'@param op.regions (GRanges) Return operations only in these regions
 #'@param pos An offset for the cigar ranges
 #'@return A GRanges list of opertion locations in reference space
 #'with a metadata column for the operation width in query space. 
-selectOps <- function(alns, ops = GenomicAlignments::CIGAR_OPS,
-                      op.regions = NULL, pos = 1L){
-    cigs <- GenomicAlignments::cigar(alns)
-    op_rngs <- cigarRangesAlongReferenceSpace(cigs, with.ops = TRUE,
+#'@rdname selectOps
+setMethod("selectOps", signature("character"),
+          function(cigar, ..., ops = GenomicAlignments::CIGAR_OPS,
+                   op.regions = NULL, pos = 1L){
+            
+    op_rngs <- cigarRangesAlongReferenceSpace(cigar, with.ops = TRUE,
                                               ops = ops, pos = pos)
-    wdths <- explodeCigarOpLengths(cigs, ops = ops)
-    op_labs <- .explodeCigarOpCombs(cigs, ops)
+    wdths <- explodeCigarOpLengths(cigar, ops = ops)
+    op_labs <- .explodeCigarOpCombs(cigar, ops)
     
     temp <- unlist(op_rngs)
     mcols(temp)$qwidth <- unlist(wdths)
@@ -380,4 +391,4 @@ selectOps <- function(alns, ops = GenomicAlignments::CIGAR_OPS,
        op_labs <- op_labs[keep_rngs]
     }
     list(op_rngs = op_rngs, op_labels = op_labs)
-} # -----
+}) # -----

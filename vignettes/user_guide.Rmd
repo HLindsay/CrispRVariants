@@ -1053,11 +1053,13 @@ If the parameter ```classify``` is set to FALSE, the variants are plotted with n
 further aggregation.  If there are more than seven variants, colours must be provided.
 
 ```{r, fig.height = 2.5}
-rainbowPal9 <- c("#781C81","#3F4EA1","#4683C1",
-                 "#57A3AD","#6DB388","#B1BE4E",
-                 "#DFA53A","#E7742F","#D92120")
+rainbowPal10 <- c("#781C81","#3F479B",
+                  "#4277BD","#529DB7",
+                  "#62AC9B","#86BB6A",
+                  "#C7B944","#E39C37",
+                  "#E76D2E","#D92120")
 
-barplotAlleleFreqs(var_counts, classify = FALSE, bar.colours = rainbowPal9)
+barplotAlleleFreqs(var_counts, classify = FALSE, bar.colours = rainbowPal10)
 
 ```
 

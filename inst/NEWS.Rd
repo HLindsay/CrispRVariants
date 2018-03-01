@@ -4,6 +4,7 @@
 
 \section{Changes in version 1.7.5}{
    \itemize{
+      \item Update tests after changes to allele counting
       \item Added \code{create.plot} argument for \code{plotFreqHeatmap}
       with signature \code{CrisprSet}.
       \item Adds an option "style" to \code{plotAlignments} for colouring

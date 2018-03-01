@@ -132,9 +132,11 @@ setMethod("plotAlignments", signature("character"),
     p <- addCodonFrame(p, nchar(ref), codon.frame)    
   }
   
-  p <- p + geom_vline(xintercept = target.loc + 0.5,
-                      colour = "black", size = line.weight)
-                                   
+  if (! is.null(target.loc)){
+    p <- p + geom_vline(xintercept = target.loc + 0.5,
+                        colour = "black", size = line.weight)
+  }
+  
   # Colours and shapes for the insertion markers and tiles
   shps <- c(21,23,25)
   clrs <- c("#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00",
@@ -145,11 +147,11 @@ setMethod("plotAlignments", signature("character"),
   top_row <- ifelse(add.other, length(nms) + 1, length(nms))
 
   # Add the guide box
-  if (highlight.guide){
+  if (isTRUE(highlight.guide)){
     ymin = top_row - (tile.height / 2 + 0.25)
     ymax = top_row + (tile.height / 2 + 0.25)
 
-    if (is.null(guide.loc)){
+    if (is.null(guide.loc) & ! is.null(target.loc)){
       xmin <- target.loc - 16.5
       xmax <- xmin + 23
     } else {
@@ -173,6 +175,7 @@ setMethod("plotAlignments", signature("character"),
         pam.end <- pam.start + 2
       }
     } else {
+      if (is.na(target.loc)) { break }
       # Infer from the target location
       pam.start <- target.loc + 4
       pam.end <- target.loc + 6
@@ -185,15 +188,16 @@ setMethod("plotAlignments", signature("character"),
                        aes_(xmin = quote(xmin), xmax = quote(xmax),
                              ymin = quote(ymin), ymax = quote(ymax)),
                        color = "black", size = line.weight, fill = "transparent")
-    #p <- p + annotation_custom(grob = textGrob("PAM", gp = gpar(cex = 3)),
-    #                           xmin = pam_df$xmin, xmax = pam_df$xmax,
-    #                           ymin = pam_df$ymin + 1, ymax = pam_df$ymax + 1)
 
   }
  
   # Make a data frame of insertion locations
-  ins_ord <- match(ins.sites$cigar, nms)
-
+  # Remove insertions that are being ignored
+  if (nrow(ins.sites) > 1){
+    ins.sites <- ins.sites[!is.na(ins.sites$start), , drop = FALSE]
+    ins_ord <- match(ins.sites$cigar, nms)
+  } else { ins_ord <- vector() }
+    
   if (nrow(ins.sites) > 0 & length(na.omit(ins_ord)) > 0){
     ins_points <- data.frame(x = ins.sites[!is.na(ins_ord),"start"] - 0.5,
                              y = na.omit(ins_ord) + 0.45,
@@ -288,6 +292,7 @@ setMethod("plotAlignments", signature("character"),
   p
 }) # -----
 
+
 # plotAlignments DNAString -----
 #'@rdname plotAlignments
 setMethod("plotAlignments", signature("DNAString"),
@@ -299,11 +304,6 @@ setMethod("plotAlignments", signature("DNAString"),
            tile.height = 0.55, max.insertion.size = 20, min.insertion.freq = 5,
            line.weight = 1, legend.symbol.size = ins.size, add.other = FALSE,
            codon.frame = NULL){
-
-    #in_args <- as.list(match.call())
-    #in_args$obj <- as.character(obj)
-    #print(in_args)
-    #do.call(plotAlignments, in_args)
 
     plotAlignments(as.character(obj), alns = alns, ins.sites = ins.sites,
            highlight.pam = highlight.pam, show.plot = show.plot,
@@ -319,6 +319,7 @@ setMethod("plotAlignments", signature("DNAString"),
            codon.frame = codon.frame, ...)
 
 }) # -----
+
 
 # addCodonFrame -----
 #'@title Internal CrispRVariants function for indicating codon frame on an
@@ -339,6 +340,7 @@ addCodonFrame <- function(p, width, codon.frame){
                linetype = "dotted", color = "lightslategray", size = 0.7)
     p
 } # -----
+
 
 # transformAlnsToLong -----
 #'@title Transform data for plotting
@@ -426,7 +428,7 @@ setMismatchTileColours <- function(m){
     m$value <- as.character(m$value)
     m$cols[is_mm] <- dna_cols[m$value[is_mm]]
     # Highlight the gaps in light gray as they aren't visible otherwise
-    m$cols[m$value == "-"] <- "#EAECEE" 
+    m$cols[m$value == "-"] <- "#A0A0A0" 
     m$cols[m$Var1 == "Reference"] <- dna_cols[m[m$Var1 == "Reference", "value"]]
     m$text_cols <- ifelse(m$cols == "#000000" & m$isref == 1, "#FFFFFF", "#000000")
     m$ref <- NULL

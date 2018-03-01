@@ -64,7 +64,6 @@ CrisprRun$methods(
     
     # If no name is provided, use the coordinates
     if (is.null(name)){
-        cat(sprintf("target: %s\n", class(target)))
         name <<- sprintf("%s:%s-%s", seqnames(target), start(target), end(target))
     } else { name <<- name}
 
@@ -99,7 +98,8 @@ Input parameters:
     if (is.null(df)) {return(NULL)}
     df$label <- .self$cigar_labels[df$idx]
     
-    agg <- aggregate(df$idx, by = as.list(df[,c(1:3,5)]), c)
+    agg <- aggregate(seq_len(nrow(df)), by = df[,c(1:3,5)], c,
+                     simplify=FALSE)
     agg$count <- lengths(agg$x)
     colnames(agg) <- c("start", "seq", "genomic_start",
                        "cigar_label", "idxs", "count")
@@ -130,7 +130,7 @@ Input parameters:
                             separate.snv, rc, match.label, mismatch.label,
                             keep.ops = c("I","D","N"),
                             upstream = min(target.loc, 8),
-                            downstream = min(6, width(ref) - target.loc),
+                            downstream = min(6, width(ref) - target.loc + 1),
                             regions = NULL, snv.regions = NULL){
     '
 Description:
@@ -157,17 +157,21 @@ Input parameters:
   snv.regions       Regions for calling SNVS'
     
     
+    # target.loc is wrt reference sequence, -ve if ref is -ve
+    # upstream and downstream defined wrt the targt.loc
+    
     # Find indels
+    
     labels <- indelLabels(.self$alns, rc,
                           genome.to.pos = genome_to_target)
     
-    relative_start <- target.loc - upstream + 1
-    relative_end <- target.loc + downstream
-    regions <- IRanges(relative_start,relative_end)
-        
+    relative_start <- max(1, target.loc - upstream + 1)
+    relative_end <- min(target.loc + downstream, nchar(ref))
+    regions <- IRanges(relative_start, relative_end)
+    
     # Find snvs
     
-    if (any(labels == "")){
+    if (any(labels == "") & isTRUE(separate.snv)){
       mm_labs <- mismatchLabels(.self$alns[labels == ""], target, ref, 
                        regions = IRanges(relative_start, relative_end), 
                        genome.to.pos = genome_to_target)
