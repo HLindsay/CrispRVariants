@@ -106,3 +106,164 @@ rfa <- refFromAlns(alns, gdl)
 # extracted from the reference above
 print(rfa == reference)
 
+## ---- message=FALSE--------------------------------------------------------
+# Note that the zero point (target.loc parameter) is 22
+crispr_set <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                            names = md$Short.name, target.loc = 22)
+crispr_set
+
+# The counts table can be accessed with the "variantCounts" function
+vc <- variantCounts(crispr_set)
+print(class(vc))
+
+## ---- eval = FALSE---------------------------------------------------------
+#  # In R
+#  library(GenomicFeatures)
+#  gtf_fname <- "Danio_rerio.GRCz10.81_chr17.gtf"
+#  txdb <- GenomicFeatures::makeTxDbFromGFF(gtf_fname, format = "gtf")
+#  saveDb(txdb, file= "GRCz10_81_chr17_txdb.sqlite")
+
+## ---- echo=FALSE, message=FALSE--------------------------------------------
+library(GenomicFeatures)
+txdb_fname <- system.file("extdata/GRCz10_81_ptena_txdb.sqlite", 
+                          package="CrispRVariants")
+txdb <- loadDb(txdb_fname)
+
+## ---- message = FALSE------------------------------------------------------
+# The gridExtra package is required to specify the legend.key.height 
+# as a "unit" object.  It is not needed to call plotVariants() with defaults
+library(gridExtra)
+
+# Match the clutch id to the column names of the variants
+group <- md$Group
+
+## ----ptena-plot, fig.width = 8.5, fig.height = 7.5, message = FALSE, fig.cap = "(Top) schematic of gene structure showing guide location (left) consensus sequences for variants (right) variant counts in each embryo."----
+p <- plotVariants(crispr_set, txdb = txdb, gene.text.size = 8, 
+    row.ht.ratio = c(1,8), col.wdth.ratio = c(4,2),
+    plotAlignments.args = list(line.weight = 0.5, ins.size = 2, 
+                               legend.symbol.size = 4),
+    plotFreqHeatmap.args = list(plot.text.size = 3, x.size = 8, group = group, 
+                                legend.text.size = 8, 
+                                legend.key.height = grid::unit(0.5, "lines"))) 
+
+## --------------------------------------------------------------------------
+# Calculate the mutation efficiency, excluding indels that occur in the "control" sample
+# and further excluding the "control" sample from the efficiency calculation
+eff <- mutationEfficiency(crispr_set, filter.cols = "control", exclude.cols = "control")
+eff
+
+# Suppose we just wanted to filter particular variants, not an entire sample.
+# This can be done using the "filter.vars" argument
+eff2 <- mutationEfficiency(crispr_set, filter.vars = "6:1D", exclude.cols = "control")
+
+# The results are the same in this case as only one variant was filtered from the control
+identical(eff,eff2)
+
+## --------------------------------------------------------------------------
+sqs <- consensusSeqs(crispr_set)
+sqs
+
+# The ptena guide is on the negative strand.
+# Confirm that the reverse complement of the "no variant" allele
+# matches the reference sequence:
+Biostrings::reverseComplement(sqs[["no variant"]]) == reference
+
+## --------------------------------------------------------------------------
+ch <- getChimeras(crispr_set, sample = "ptena 4")
+
+# Confirm that all chimeric alignments are part of the same read
+length(unique(names(ch))) == 1
+
+# Set up points to annotate on the plot
+annotations <- c(resize(gd, 1, fix = "start"), resize(gd, 1, fix = "end"))
+annotations$name <- c("ptena_start", "ptena_end")
+
+plotChimeras(ch, annotations = annotations)
+
+
+## --------------------------------------------------------------------------
+mutationEfficiency(crispr_set, filter.cols = "control", exclude.cols = "control",
+                   include.chimeras = FALSE)
+
+## ---- fig.width = 8.5, fig.height = 7.5, message = FALSE, warning = FALSE----
+
+crispr_set_rev <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                                names = md$Short.name, target.loc = 22, 
+                                orientation = "opposite")
+plotVariants(crispr_set_rev)
+
+## ---- warning = FALSE------------------------------------------------------
+# We create a longer region to use as the "target"
+# and the corresponding reference sequence
+gdl <- GenomicRanges::resize(gd, width(gd) + 20, fix = "center")
+reference <- Biostrings::DNAString("TCATTGCCATGGGCTTTCCAGCCGAACGATTGGAAGGTGTTTA")
+
+# At this stage, target should be the entire region to display and target.loc should
+# be the zero point with respect to this region
+crispr_set <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                            names = md$Short.name, target.loc = 10,
+                            verbose = FALSE)
+
+# Multiple guides are added at the stage of plotting
+# The boundaries of the guide regions must be specified with respect to the
+# given target region
+p <- plotVariants(crispr_set, 
+       plotAlignments.args = list(pam.start = c(6,35),
+                              target.loc = c(10, 32),
+                              guide.loc = IRanges::IRanges(c(6, 25),c(20, 37))))
+p
+
+## ---- message = FALSE------------------------------------------------------
+# Setup for ptena data set
+library("CrispRVariants")
+library("rtracklayer")
+library("GenomicFeatures")
+library("gdata")
+
+# Load the guide location
+gd_fname <- system.file(package="CrispRVariants", "extdata/bed/guide.bed")
+gd <- rtracklayer::import(gd_fname)
+gdl <- resize(gd, width(gd) + 10, fix = "center")
+
+# The saved reference sequence corresponds to the guide 
+# plus 5 bases on either side, i.e. gdl
+ref_fname <- system.file(package="CrispRVariants", 
+                         "extdata/ptena_GRCHz10_ref.rda")
+load(ref_fname)
+
+# Load the metadata table, which gives the sample names
+md_fname <- system.file(package="CrispRVariants",
+                        "extdata/metadata/metadata.xls")
+md <- gdata::read.xls(md_fname, 1)
+
+# Get the list of bam files
+bam_dir <- system.file(package="CrispRVariants", "extdata/bam")
+bam_fnames <- file.path(bam_dir, md$bamfile)
+
+# Check that all files were found
+all(file.exists(bam_fnames))
+
+crispr_set <- readsToTarget(bam_fnames, target = gdl, reference = reference,
+                            names = md$Short.name, target.loc = 22,
+                            verbose = FALSE)
+
+# Load the transcript database
+txdb_fname <- system.file("extdata/GRCz10_81_ptena_txdb.sqlite", 
+                          package="CrispRVariants")
+txdb <- AnnotationDbi::loadDb(txdb_fname)
+
+
+## ---- fig.height = 5, warning = FALSE--------------------------------------
+p <- plotVariants(crispr_set, txdb = txdb)
+
+## ---- fig.height = 5, warning = FALSE--------------------------------------
+p <- plotVariants(crispr_set, txdb = txdb, row.ht.ratio = c(1,3))
+
+## ---- fig.height = 5, message = FALSE, warning = FALSE---------------------
+p <- plotVariants(crispr_set, txdb = txdb, col.wdth.ratio = c(4,1))
+
+## --------------------------------------------------------------------------
+# Load gol data set
+library("CrispRVariants")
+data("gol_clutch1")
+
