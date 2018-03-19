@@ -169,7 +169,7 @@ CrisprSet$methods(
   }, # -----
   
   # .setCigarLabels -----
-  setCigarLabels = function(labels = NULL, verbose = FALSE, ...){
+  setCigarLabels = function(labels = NULL, label.func = NULL, verbose = FALSE, ...){
     #Optional params include:
     #split.snv Should single nucleotide variants (SNVs) be shown for
     #          reads without an insertion or deletion? (default: TRUE)
@@ -180,6 +180,10 @@ CrisprSet$methods(
     
       if (isTRUE(verbose)) message("Renaming cigar strings\n")
     
+      if (! is.null(label.func)){
+        labels <- label.func(alns(.self))
+      }
+
       if (! is.null(labels)){
         if (! lengths(labels) == lengths(alns(.self))){
           stop("Lengths of labels not equal to length of alignments")
@@ -847,7 +851,7 @@ See also:
 
     # Order the columns
     if (! is.null(order)){
-      cig_freqs <- cig_freqs[,order]
+      cig_freqs <- cig_freqs[,order, drop = FALSE]
       header <- header[order]
       col_sums <- col_sums[order]
     }
@@ -1206,7 +1210,7 @@ cig_freqs:  A table of variant allele frequencies (by default: .self$cigar_freqs
     # Right = original - target.loc
 
     stopifnot(isTRUEorFALSE(plus_strand))
-    if (all(lengths(alns(crispr_set))) == 0) return(NULL)
+    if (all(lengths(alns(.self))) == 0) return(NULL)
     
     if (is.null(gs) | is.null(ge)){
       gs <- min(sapply(.self$crispr_runs, function(x) min(start(x$alns))))

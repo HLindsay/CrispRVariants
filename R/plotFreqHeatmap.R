@@ -1,3 +1,4 @@
+# plotFreqHeatmap generic -----
 #'@title Plot a table of counts with colours indicating frequency
 #'@description Creates a heatmap from a matrix of counts or proportions,
 #'where tiles are coloured by the proportion and labeled with the value.
@@ -5,8 +6,9 @@
 #'@export
 setGeneric("plotFreqHeatmap", function(obj, ...) {
   standardGeneric("plotFreqHeatmap")})
+# -----
 
-
+# plotFreqHeatmap matrix -----
 #'@rdname plotFreqHeatmap
 #'@param obj A matrix of counts with rows = feature, columns = sample
 #'@param col.sums Alternative column sums to be used for calculating
@@ -27,7 +29,7 @@ setGeneric("plotFreqHeatmap", function(obj, ...) {
 #'@param y.size Font size for y-labels (Default: 16)
 #'@param x.angle  Angle for x-labels (Default: 90, i.e. vertical)
 #'@param legend.text.size Font size for legend (Default: 16)
-#'@param plot.text.size Font size counts within plot (Default: 8)
+#'@param plot.text.size Font size counts within plot (Default: 3)
 #'@param line.width Line thickness of title box'
 #'@param x.hjust Horizontal justification of x axis labels (Default: 1)
 #'@param legend.position The position of the legend (Default: right)
@@ -187,9 +189,10 @@ setMethod("plotFreqHeatmap", signature("matrix"),
   }
 
   return(g)
-})
+}) # ------
 
 
+# plotFreqHeatmap CrisprSet ----- 
 #'@rdname plotFreqHeatmap
 #'@param top.n  Show the n top ranked variants.  Note that if the nth and n+1th
 #'variants have equal rank, they will not be shown.   (Default: 50)
@@ -219,4 +222,4 @@ setMethod("plotFreqHeatmap", signature("CrisprSet"),
                      min.count = min.count, type = type, order = order,
                      alleles = alleles, ...)
   return(result)
-})
+}) # ------

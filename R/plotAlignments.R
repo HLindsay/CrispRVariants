@@ -152,8 +152,8 @@ setMethod("plotAlignments", signature("character"),
     ymax = top_row + (tile.height / 2 + 0.25)
 
     if (is.null(guide.loc) & ! is.null(target.loc)){
-      xmin <- target.loc - 16.5
-      xmax <- xmin + 23
+      xmin <- max(target.loc - 16.5, 0.5)
+      xmax <- min(xmin + 23, nchar(obj) + 0.5)
     } else {
       xmin <- start(guide.loc) - 0.5
       xmax <- end(guide.loc) + 0.5

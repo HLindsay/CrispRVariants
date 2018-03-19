@@ -2,6 +2,14 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.7}{
+  \itemize{
+      \item Adds min and max for guide bounding box in plot
+      \item Fixes bug in \code{plotFreqHeatmap} caused when
+      using "group" with a single row count matrix 
+  }
+}
+
 \section{Changes in version 1.7.5}{
    \itemize{
       \item Update tests after changes to allele counting
