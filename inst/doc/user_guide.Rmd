@@ -8,7 +8,6 @@ package: "CrispRVariants"
 vignette: >
   %\VignetteIndexEntry{CrispRVariants}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 <!-- can build with:
