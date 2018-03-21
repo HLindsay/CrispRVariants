@@ -1,7 +1,7 @@
 # variantCounts -----
 #'@title Get variant counts
-#'@description Returns a matrix of counts where rows are sequence variants an columns
-#' are samples
+#'@description Returns a matrix of counts where rows are sequence variants
+#' and columns are samples
 #'@param obj An object containing variant counts
 #'@param ... Additional arguments
 #'@return A matrix of counts where rows are variants and columns are samples
@@ -60,15 +60,17 @@ setMethod("variantCounts", signature("CrisprSet"),
 setGeneric("mutationEfficiency", function(obj, ...) {
   standardGeneric("mutationEfficiency")})
 
-#'@param snv  Single nucleotide variants (SNVs) may be considered as mutations ("include"),
-#'treated as ambiguous sequences and not counted at all ("exclude"), or treated as
-#'non-mutations, e.g. sequencing errors or pre-existing SNVs ("non_variant", default)
+#'@param snv  Single nucleotide variants (SNVs) may be considered as
+#'mutations ("include"), treated as ambiguous sequences and not counted
+#'at all ("exclude"), or treated as non-mutations, e.g. sequencing errors
+#'or pre-existing SNVs ("non_variant", default)
 #'@param include.chimeras Should chimeric alignments be counted as variants
 #'when calculating mutation efficiency (Default: TRUE
 #'@param exclude.cols A vector of names of columns in the variant counts table
 #'that will not be considered when counting mutation efficiency
-#'@param filter.vars Variants to remove before calculating efficiency.  May be either
-#'a variant size, e.g. "1D", or a particular variant/variant combination, e.g. -5:3D
+#'@param filter.vars Variants to remove before calculating efficiency.
+#'May be either a variant size, e.g. "1D", or a particular 
+#'variant/variant combination, e.g. -5:3D
 #'@param filter.cols A vector of control sample names.  Any variants present in the control
 #'samples will be counted as non-variant, unless they also contain another indel.  Note that
 #'this is not compatible with counting snvs as variants.

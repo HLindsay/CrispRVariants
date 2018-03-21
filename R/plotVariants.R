@@ -1,3 +1,4 @@
+# plotVariants generic -----
 #'@title Plot alignments, frequencies and location of target sequence
 #'@description Combines a plot of transcript structure, alleles
 #' aligned with respect to a reference genome and a heatmap of
@@ -8,7 +9,9 @@
 #'@export
 setGeneric("plotVariants", function(obj, ...) {
   standardGeneric("plotVariants")})
+# -----
 
+# plotVariants CrisprSet -----
 #'@rdname plotVariants
 #'@param txdb GenomicFeatures:TxDb object (default: NULL)
 #'@param plotAlignments.args Extra arguments for plotAlignments
@@ -108,8 +111,9 @@ setMethod("plotVariants", signature("CrisprSet"),
     result <- do.call(arrangePlots, arrange_args)
 
     return(result)
-})
+}) # -----
 
+# arrangePlots ------ 
 #'@title Arrange plots for plotVariants:CrisprSet
 #'@description Arranges 3 plots in two rows.  The vertical margins of the
 #'left.plot and right.plot constrained to be equal
@@ -149,9 +153,9 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
   return(gridExtra::grid.arrange(top.plot,
          gridExtra::arrangeGrob(p2, p3, ncol = 2, widths = col.wdth.ratio),
          nrow = 2, heights = plot_hts, newpage = FALSE))
-}
+} # -----
 
-
+# getOverlappingGenes -----
 .getOverlappingGenes <- function(txdb, target, all.transcripts = TRUE){
     genomicfeatures <- requireNamespace("GenomicFeatures")
     stopifnot(isTRUE(genomicfeatures))
@@ -180,9 +184,9 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
     }
     
     genes
-}
+} # -----
 
-
+# makeGeneSegments -----
 .makeGeneSegments <- function(genes, txdb, target){
     gene_gr <- GRanges(seqnames(target)[1],
                      IRanges(genes$EXONSTART, genes$EXONEND),
@@ -227,10 +231,9 @@ arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
     colnames(all_exs) <- c("start", "end", "ts", "type")
   
     list("all_exs" = all_exs, "gene_spans" = gene_spans)
-}
+} # -----
 
-
-
+# annotateGenePlot -----
 #'@title Plots and annotates transcripts
 #'@description Plots the gene structure, annotates this with the
 #'target location
@@ -311,7 +314,7 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
                              ymin = quote(ymin), ymax = quote(ymax)),
                        colour = target.colour, fill = NA, size = target.size)
 
-    if (! plot.title == FALSE){
+    if (! isFALSE(plot.title)){
       p <- p + ggtitle(plot.title)
     }
     p <- p + theme_minimal() +
@@ -327,4 +330,4 @@ annotateGenePlot <- function(txdb, target, target.colour = "red",
          ylab(NULL) + xlab(NULL)
 
     return(p)
-}
+} # -----

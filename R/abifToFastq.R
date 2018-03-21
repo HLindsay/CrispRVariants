@@ -29,8 +29,8 @@ abifToFastq <- function(seqname, fname, outfname, trim = TRUE, cutoff = 0.05,
     # Translation of python function
     abif <- sangerseqR::read.abif(fname)
     if (is.null(abif@data$PCON.2)){
-      message(sprintf("failed on %s", seqname))
-      return()
+       message(sprintf("failed on %s", seqname))
+       return()
     }
 
     # Remove the extra character if it exists
@@ -39,36 +39,36 @@ abifToFastq <- function(seqname, fname, outfname, trim = TRUE, cutoff = 0.05,
     # sangerSeqR PCON.2 is a UTF8-encoded character vector in release, 
     # an integer vector in devel
     if (! typeof(abif@data$PCON.2) == "integer"){
-      num_quals <- utf8ToInt(abif@data$PCON.2)[1:length(abif@data$PLOC.2)]
+        num_quals <- utf8ToInt(abif@data$PCON.2)[1:length(abif@data$PLOC.2)]
     } else {
-      num_quals <- abif@data$PCON.2[1:length(abif@data$PLOC.2)]
+        num_quals <- abif@data$PCON.2[1:length(abif@data$PLOC.2)]
     }
   
     if (isTRUE(recall)){
-      recalled <- sangerseqR::makeBaseCalls(sangerseqR::sangerseq(abif))
-      nucseq <- sangerseqR::primarySeq(recalled, string = TRUE)
-      if (nchar(nucseq) != length(num_quals)){
-        trim <- FALSE
-        # Set all quality scores equal
-        num_quals <- rep(60, nchar(nucseq)) 
-        # 60 is compatible with all phred offsets, according to Wikipedia
-        # Sanger scores do not usually exceed 60
-        warning("Length of quality scores does not equal length of
-                re-called base sequence, ignoring quality scores")
-      }
+        recalled <- sangerseqR::makeBaseCalls(sangerseqR::sangerseq(abif))
+        nucseq <- sangerseqR::primarySeq(recalled, string = TRUE)
+        if (nchar(nucseq) != length(num_quals)){
+            trim <- FALSE
+            # Set all quality scores equal
+            num_quals <- rep(60, nchar(nucseq)) 
+            # 60 is compatible with all phred offsets, according
+            #  to Wikipedia Sanger scores do not usually exceed 60
+            warning("Length of quality scores does not equal length of
+                    re-called base sequence, ignoring quality scores")
+        }
     }
   
     if (trim == FALSE){
-      writeFastq(outfname, list("seqname" = seqname, "seq" = nucseq,
+        writeFastq(outfname, list("seqname" = seqname, "seq" = nucseq,
                   "quals" = rawToChar(as.raw(num_quals + offset))))
-      return()
+        return()
     }
 
     trim_msg <- paste("Sequence %s can not be trimmed because",
                       "it is shorter than the trim segment size")
     if (nchar(nucseq) <= min_seq_len){
-      warning(sprintf(trim_msg, seqname))
-      return()
+        warning(sprintf(trim_msg, seqname))
+        return()
     }
 
     scores = cutoff - 10^(num_quals / -10)
@@ -76,8 +76,8 @@ abifToFastq <- function(seqname, fname, outfname, trim = TRUE, cutoff = 0.05,
 
     # Note running_sum counts from zero, scores from 1
     for (i in 1:length(scores)){
-      num <- scores[i] + running_sum[i]
-      running_sum[i+1] <- ifelse(num < 0, 0, num)
+        num <- scores[i] + running_sum[i]
+        running_sum[i+1] <- ifelse(num < 0, 0, num)
     }
 
     trim_start <- min(which(running_sum > 0)) - 1
@@ -86,8 +86,8 @@ abifToFastq <- function(seqname, fname, outfname, trim = TRUE, cutoff = 0.05,
 
     # Additional check that there is enough sequence (not in abifpy):
     if (trim_finish - trim_start < min_seq_len -1){
-      warning(sprintf(trim_msg, seqname))
-      return()
+        warning(sprintf(trim_msg, seqname))
+        return()
     }
 
     writeFastq(outfname, list("seqname" = seqname,
