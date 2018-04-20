@@ -226,13 +226,10 @@ setGeneric("alleles", function(obj, ...) {
 #'alleles <- alleles(gol)
 setMethod("alleles", signature("CrisprSet"),
           function(obj, ...){
-            # To do:
-            # Store unique labels and CIGAR strings  to avoid lapply
             
             alns <- unlist(unname(alns(obj)))
             cigars <- GenomicAlignments::cigar(alns)
-            labels <- unlist(unname(lapply(obj$crispr_runs,
-                                           "[[", "cigar_labels")))
+            labels <- mcols(alns)$allele
             result <- data.frame(label = as.character(labels), 
                                  cigar = as.character(cigars),
                                  genomic.loc = start(alns),

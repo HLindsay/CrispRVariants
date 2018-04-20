@@ -1085,24 +1085,25 @@ or a list containing the consensus sequences and names for the labels
 if return_nms = TRUE
 '
     
+    # Note: with old pac bio data, reads can have different cigars
+    # but same label for insertions and deletions
+    
     alns <- unname(unlist(alns(.self)))
     cigs <- cigar(alns)
     cig_labels <- mcols(alns)$allele
     
     # calling by name with duplicates returns the first match
     names(cigs) <- cig_labels
-    
-    # Not identical on pac bio, can have different cigars and same label
-    #var_alleles <- alleles(.self)
-    #cigs2 <- structure(as.character(var_alleles$cigar), 
-    #          names = as.character(var_alleles$label))
-    
+  
+    # Get read indices per label, match row order of cig_freqs
     splits <- split(seq_along(cig_labels), cig_labels)
     splits <- splits[match(rownames(cig_freqs), names(splits))]
     
+    # Convert names to cigar strings 
     splits_labels <- names(splits)
     names(splits) <- cigs[names(splits)]
     
+    # Find alignments where a deletion spans the target region
     grep_str <- paste(match.ops, collapse = "|")
     all_d <- grep(grep_str, names(splits), invert = TRUE)
     
@@ -1165,6 +1166,7 @@ if return_nms = TRUE
     names(seqs) <- splits_labels
     seqs
   }, # -----
+
 
   # makePairwiseAlns -----
   makePairwiseAlns = function(cig_freqs = .self$cigar_freqs, ...){

@@ -58,7 +58,12 @@ setMethod("plotVariants", signature("CrisprSet"),
         stop("txdb should be a (GenomicFeatures) transcript database object")
       }
     }
-  
+    if (isFALSE(plotAlignments.args$create.plot) |
+        isFALSE(plotFreqHeatmap.args$create.plot) ){
+      stop("Argument create.plot can not be FALSE for plotVariants.\n",
+        "Call plotAlignments or plotFreqHeatmap directly to get plot data.")
+    }
+    
     dots <- list(...)
     annotate_nms <- c("target.colour", "target.size",
                       "gene.text.size", "panel.spacing")

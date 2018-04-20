@@ -2,6 +2,15 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+
+\section{Changes in version 1.7.9}{
+  \itemize{
+      \item Updates mergeCrisprSets in accordance with new order
+      of counting operations
+  }
+}
+
+
 \section{Changes in version 1.7.7}{
   \itemize{
       \item Adds min and max for guide bounding box in plot

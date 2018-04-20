@@ -60,8 +60,8 @@ setMethod("mergeCrisprSets", signature(x = "CrisprSet", y = "CrisprSet"),
             if (is.null(x.samples)) x.samples <- c(1:length(x$crispr_runs))
             if (is.null(y.samples)) y.samples <- c(1:length(y$crispr_runs))
             cruns <- c(x$crispr_runs[x.samples], y$crispr_runs[y.samples])
+            new_names <- sapply(cruns, function(x) x$name)
             
-            new_names <- c(names(x), names(y))
             if (! is.null(names)){
               if (! length(cruns) == length(names)){
                 stop("Length of 'names' must equal the number of samples")
@@ -75,7 +75,15 @@ setMethod("mergeCrisprSets", signature(x = "CrisprSet", y = "CrisprSet"),
             #}
             cset <- CrisprSet(cruns, reference = ref, target = target,
                       names = new_names, target.loc = t.loc)
+            
+            # Recreate variant counts table
+            temp <- alns(cset)
+            cig_by_run <- relist(mcols(unlist(temp))$allele, temp)
+            .self$.countCigars(cig_by_run)
+            .self$.getInsertions()
+            
             cset
+            
           }) # -----
 
 # indelCounts -----
@@ -392,3 +400,8 @@ setMethod("selectOps", signature("character"),
     }
     list(op_rngs = op_rngs, op_labels = op_labs)
 }) # -----
+
+
+isFALSE <- function(x){
+  is.logical(x) && ! is.na(x) & ! isTRUE(x)
+}
