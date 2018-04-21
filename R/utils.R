@@ -79,8 +79,8 @@ setMethod("mergeCrisprSets", signature(x = "CrisprSet", y = "CrisprSet"),
             # Recreate variant counts table
             temp <- alns(cset)
             cig_by_run <- relist(mcols(unlist(temp))$allele, temp)
-            .self$.countCigars(cig_by_run)
-            .self$.getInsertions()
+            cset$.countCigars(cig_by_run)
+            cset$.getInsertions()
             
             cset
             

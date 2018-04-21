@@ -2,6 +2,12 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.10}{
+  \itemize{
+      \item \code{CrisprSet} method \code{setCigarLabels} now allows renaming labels
+  }
+}
+
 
 \section{Changes in version 1.7.9}{
   \itemize{

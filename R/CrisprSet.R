@@ -178,24 +178,31 @@ CrisprSet$methods(
     #downstream.snv If split.snv = TRUE, how many bases downstream of 
     #               the target.loc should SNVs be shown? (default: 6)
     
+      # To do: add checks that replacement alleles still have same indel combinations
+      # or write a consensus function for alleles with different indels 
+    
       if (isTRUE(verbose)) message("Renaming cigar strings\n")
     
       if (! is.null(label.func)){
-        labels <- label.func(alns(.self))
+        labels <- label.func(alns(.self), ...)
       }
 
       if (! is.null(labels)){
-        if (! lengths(labels) == lengths(alns(.self))){
-          stop("Lengths of labels not equal to length of alignments")
+        if (! all(lengths(labels) == lengths(alns(.self)))){
+          stop("Lengths of labels not identical to length of alignments")
         }
+        
         dummy <- lapply(seq_along(labels), function(i){
-          mcols(.self$crispr_runs[[i]])$allele <- labels[[i]]
-          .self$field("cigar_labels", labels)
+          crun <- .self$crispr_runs[[i]]
+          mcols(crun$alns)$allele <- labels[[i]]
+          crun$field("cigar_labels", labels[[i]])
         })
         cig_by_run <- labels
+      
       } else { 
         cig_by_run <- .defaultCigarLabels(.self, ...)
       }
+    
       if (isTRUE(verbose)) message("Counting variant combinations\n")
       .self$.countCigars(cig_by_run)
       .self$.getInsertions()
