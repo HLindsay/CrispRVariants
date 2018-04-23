@@ -4,3 +4,9 @@ language: r
 r: bioc-devel
 sudo: false
 cache: packages
+
+bioc_packages:
+  - BiocCheck
+
+after_success:
+  - R CMD BiocCheck --new-package --no-check-vignettes CrispRVariants*.tar.gz
