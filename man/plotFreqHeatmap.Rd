@@ -54,7 +54,7 @@ per sample (TRUE) or the actual counts (FALSE)?  (Default: TRUE)}
 
 \item{legend.text.size}{Font size for legend (Default: 16)}
 
-\item{plot.text.size}{Font size counts within plot (Default: 8)}
+\item{plot.text.size}{Font size counts within plot (Default: 3)}
 
 \item{line.width}{Line thickness of title box'}
 

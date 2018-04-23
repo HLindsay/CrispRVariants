@@ -375,6 +375,7 @@ setGeneric("selectOps", function(cigar, ...) {
 #'@param ops  CIGAR operations to consider (Default: all)
 #'@param op.regions (GRanges) Return operations only in these regions
 #'@param pos An offset for the cigar ranges
+#'@param ... Extra arguments (Not currently used)
 #'@return A GRanges list of opertion locations in reference space
 #'with a metadata column for the operation width in query space. 
 #'@rdname selectOps

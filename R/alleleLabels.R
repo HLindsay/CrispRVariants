@@ -163,6 +163,11 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
     posns <- ref.start:(ref.start + rwdth - 1)
     names(posns) <- 1:rwdth
     
+    # HERE TO LOOP OVER REGIONS
+    # unlist(unname(GAlignmentsList(alns[[1]])))
+    
+    
+    
     # Note: using replaceAt as looking at single base positions
     if (! is.null(regions)){
       del_regions <- gaps(regions, start = 1, end = rwdth)
@@ -206,6 +211,7 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
 
 # nonindelLabels -----
 #'@title nonindelLabels
+#'@description Make variant labels for variants without an insertion or deletion
 #'@param alns A GAlignments object, where the aligned sequences should span the
 #'reference sequence
 #'@param target (GRanges(1)) The region for counting mismatches 
@@ -231,6 +237,10 @@ mismatchLabels <- function(alns, target, ref.seq,
                            mismatch.label = "SNV",
                            genome.to.pos = NULL,
                            as.string = TRUE){
+    # Multiple counting rules
+    # Check rules don't overlap
+    # Each rule may have from bases?  and to bases
+  
 
     mm <- .findMismatches(alns, ref.seq = ref.seq,
                           ref.start = start(target),
@@ -278,37 +288,6 @@ matchLabels <- function(alns, target, match.label = "No variant"){
     aln_labels <- rep(match.label, length(alns))
     aln_labels[! spans] <- cigar(alns)[! spans]
 }
-
-
-#'@title alleleLabels
-#'@description  Developmental function for more flexible labeling
-#'of variant alleles
-#'@param alns (GenomicAlignments)
-#'@param target (GRanges(1))
-#'@param indel.ranges (IRanges)
-#'@param indel.freq (numeric)
-#'@param snp.ranges (IRanges)
-#'@param genome.to.pos (numeric)
-#'@param novar.label  (Character(1)) Label for non-variant reads
-#'(Default: No variant)
-#'@param mismatch.label  (Character(1)) Prefix for single nucleotide
-#'variants (Default: SNV:)
-#'@param ...  Extra arguments for individual counting functions
-#'@return A list of labels for the reads in alns
-alleleLabels <- function(alns, target, reference,
-                         indel.ranges = NULL, indel.freq = NULL,
-                         snp.ranges = NULL, snp.freq = NULL,
-                         genome.to.pos = NULL,
-                         novar.label = "No variant",
-                         mismatch.label = "SNV:", ...){
-  
-    # To do:
-    # Allow counting only a subset of all SNV types (snp.categories)
-    # Allow collapsing by strdist weighted.strdist = NULL
-  
-  
-}
-
 
 
 # .defaultCigarLabels -----

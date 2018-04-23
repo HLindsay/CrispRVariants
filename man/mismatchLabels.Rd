@@ -38,3 +38,6 @@ a single comma separated string when one alignment has multiple variants?
 A data frame of sequence indices, genomic position of mismatch
 and mismatch base
 }
+\description{
+Make variant labels for variants without an insertion or deletion
+}

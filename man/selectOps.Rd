@@ -14,6 +14,8 @@ selectOps(cigar, ...)
 \arguments{
 \item{cigar}{CIGAR strings}
 
+\item{...}{Extra arguments (Not currently used)}
+
 \item{ops}{CIGAR operations to consider (Default: all)}
 
 \item{op.regions}{(GRanges) Return operations only in these regions}

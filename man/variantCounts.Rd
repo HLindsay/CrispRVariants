@@ -41,8 +41,8 @@ proportions ("proportions")}
 A matrix of counts where rows are variants and columns are samples
 }
 \description{
-Returns a matrix of counts where rows are sequence variants an columns
-are samples
+Returns a matrix of counts where rows are sequence variants
+and columns are samples
 }
 \examples{
 data("gol_clutch1")
