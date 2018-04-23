@@ -3,3 +3,7 @@
 language: R
 sudo: false
 cache: packages
+
+install:
+  - ./travis-tool.sh install_deps
+  - ./travis-tool.sh install_bioc_deps
