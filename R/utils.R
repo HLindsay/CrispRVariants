@@ -335,6 +335,8 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'@param inner vector that will join elements of outer
 #'@author Helen Lindsay
 #'@examples CrispRVariants:::.intersperse(c(1:10), c(1:9)*10)
+#'@return A vector interspersing elements of outer and inner.  If
+#'outer is c(a,b,c) and inner is c(d,e), returns c(a,d,b,e,c)
 #'@rdname intersperse
 .intersperse <- function(outer, inner){
     result <- vector(class(outer), length(c(outer,inner)))
@@ -352,6 +354,7 @@ dispatchDots <- function(func, ..., call = FALSE){
 #'@return The operations, as a CharacterList
 #'@author Helen Lindsay
 #'@rdname explodeCigarOpCombs
+#'@return Exploded cigar operations with operation widths
 .explodeCigarOpCombs <- function(cigar, ops = GenomicAlignments::CIGAR_OPS){
     wdths <- GenomicAlignments::explodeCigarOpLengths(cigar, ops = ops)
     keep.ops <- GenomicAlignments::explodeCigarOps(cigar, ops = ops)

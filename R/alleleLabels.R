@@ -68,6 +68,7 @@
 #'@param regions  IRanges(k) Regions for counting insertions and
 #'deletions.  Insertions on the right border are not counted.
 #'@param ... extra formatting arguments
+#'@return A vector of labels for alns
 indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
                        keep.ops = c("I","D","N"), regions = NULL, 
                        ...){

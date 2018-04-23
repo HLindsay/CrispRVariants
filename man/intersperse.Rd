@@ -11,6 +11,10 @@
 
 \item{inner}{vector that will join elements of outer}
 }
+\value{
+A vector interspersing elements of outer and inner.  If
+outer is c(a,b,c) and inner is c(d,e), returns c(a,d,b,e,c)
+}
 \description{
 create a vector of elements in outer interspersed with
 elements in inner.  Similar to python zip. No element checking.

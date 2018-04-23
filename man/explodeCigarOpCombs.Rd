@@ -13,6 +13,8 @@
 }
 \value{
 The operations, as a CharacterList
+
+Exploded cigar operations with operation widths
 }
 \description{
 Breaks cigar strings into individual operations

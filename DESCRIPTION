@@ -16,7 +16,7 @@ biocViews: CRISPR, GenomicVariation, VariantDetection, GeneticVariability,
     DataRepresentation, Visualization
 LazyData: true
 Depends:
-    R (>= 3.4),
+    R (>= 3.5),
     ggplot2 (>= 2.2.0)
 License: GPL-2
 Imports:

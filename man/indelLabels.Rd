@@ -24,6 +24,9 @@ deletions.  Insertions on the right border are not counted.}
 
 \item{...}{extra formatting arguments}
 }
+\value{
+A vector of labels for alns
+}
 \description{
 Makes allele labels for insertion / deletion variants
 }
