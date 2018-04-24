@@ -57,8 +57,8 @@ setMethod("mergeCrisprSets", signature(x = "CrisprSet", y = "CrisprSet"),
               stop(sprintf(warn_msg, "target location (zero point)"))
             }
             
-            if (is.null(x.samples)) x.samples <- c(1:length(x$crispr_runs))
-            if (is.null(y.samples)) y.samples <- c(1:length(y$crispr_runs))
+            if (is.null(x.samples)) x.samples <- seq_along(x$crispr_runs)
+            if (is.null(y.samples)) y.samples <- seq_along(y$crispr_runs)
             cruns <- c(x$crispr_runs[x.samples], y$crispr_runs[y.samples])
             new_names <- sapply(cruns, function(x) x$name)
             
