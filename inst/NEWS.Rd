@@ -2,6 +2,14 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.7.12}{
+  \itemize{
+      \item Change CrisprSe$insertion_sites "idxs" column to read indices
+      for reads with multiple insertions
+  }
+}
+
+
 \section{Changes in version 1.7.10}{
   \itemize{
       \item \code{CrisprSet} method \code{setCigarLabels} now allows renaming labels
