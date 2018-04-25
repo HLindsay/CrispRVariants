@@ -98,8 +98,7 @@ Input parameters:
     if (is.null(df)) {return(NULL)}
     df$label <- .self$cigar_labels[df$idx]
     
-    agg <- aggregate(seq_len(nrow(df)), by = df[,c(1:3,5)], c,
-                     simplify=FALSE)
+    agg <- aggregate(df[,4], by = df[,c(1:3,5)], c, simplify=FALSE)
     agg$count <- lengths(agg$x)
     colnames(agg) <- c("start", "seq", "genomic_start",
                        "cigar_label", "idxs", "count")
