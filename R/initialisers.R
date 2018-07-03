@@ -449,11 +449,13 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
     chimerasByPCR <- lapply(seq_along(temp[[1]]), tlist)
     temp <- lapply(byPCR, "[[", "bamByPCR")
     bamByPCR <- lapply(seq_along(temp[[1]]), tlist)
-    tg_gr <- GenomicRanges::GRangesList(targets)
+    tg_gr <- as(targets, "GRangesList")
+    
 
     result <- BiocParallel::bplapply(seq_along(bamByPCR), function(i){
       bams <- bamByPCR[[i]]
       tgt <- tg_gr[[i]]
+      mcols(tgt) <- mcols(targets[i])
       chs <- chimerasByPCR[[i]]
       ref <- references[[i]]
       if (isTRUE(verbose)){

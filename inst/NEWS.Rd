@@ -2,6 +2,14 @@
 \title{News for Package \pkg{CrispRVariants}}
 
 
+\section{Changes in version 1.9.2}{
+  \itemize{
+      \item Keep metadata columns in targets
+      \item Adds function for splitting insertion sequences
+  }
+}
+
+
 \section{Changes in version 1.7.12}{
   \itemize{
       \item Change CrisprSe$insertion_sites "idxs" column to read indices
