@@ -449,7 +449,7 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
     chimerasByPCR <- lapply(seq_along(temp[[1]]), tlist)
     temp <- lapply(byPCR, "[[", "bamByPCR")
     bamByPCR <- lapply(seq_along(temp[[1]]), tlist)
-    tg_gr <- as(targets, "GRangesList")
+    tg_gr <- GenomicRanges::GRangesList(targets)
 
     result <- BiocParallel::bplapply(seq_along(bamByPCR), function(i){
       bams <- bamByPCR[[i]]
@@ -483,13 +483,6 @@ setMethod("readsToTargets", signature("GAlignmentsList", "GRanges"),
 #__________________________________________________________________
 # Data import and processing
 #__________________________________________________________________
-.createCrisprRun <- function(){
-  
-  
-}
-
-
-
 
 # separateChimeras -----
 separateChimeras <- function(bam, targets, tolerance = 5,

@@ -67,11 +67,12 @@
 #'(usually indels)
 #'@param regions  IRanges(k) Regions for counting insertions and
 #'deletions.  Insertions on the right border are not counted.
+#'@param as.string Return labels as strings (Default: TRUE)
 #'@param ... extra formatting arguments
 #'@return A vector of labels for alns
 indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
-                       keep.ops = c("I","D","N"), regions = NULL, 
-                       ...){
+                       keep.ops = c("I","D","N"), regions = NULL,
+                       as.string = TRUE, ...){
     
     # MAKE CONSISTENT: USE GENOMIC OR RELATIVE COORDS
     cigs <- GenomicAlignments::cigar(alns)
@@ -80,12 +81,15 @@ indelLabels = function(alns, rc = FALSE, genome.to.pos = NULL,
                          pos = start(alns))
     
     position <- ifelse(isTRUE(rc), "end", "start")
+    
+
     op_labs <- .formatVarLabels(op_locs$op_rngs, op_locs$op_labels,
-                                position = position,
+                                position = position, as.string = as.string,
                                 genome.to.pos = genome.to.pos, ...)
     
     op_labs
 } # -----
+
 
 # .resolveRefStrand -----
 # If the reference provided maps to the negative strand, use
@@ -300,41 +304,102 @@ matchLabels <- function(alns, target, match.label = "No variant"){
                                upstream.snv = 8, downstream.snv = 6,
                                bpparam = BiocParallel::SerialParam()){
   
-  # Are the match and mismatch labels already set in the cset?
-  if (all(lengths(alns(cset))) == 0) return(NULL)
+    # Are the match and mismatch labels already set in the cset?
+    if (all(lengths(alns(cset))) == 0) return(NULL)
   
-  g_to_t <- NULL
-  target.loc = cset$pars$target.loc
-  target_start = start(cset$target)
-  target_end = end(cset$target)
-  rc = cset$pars$rc
-  ref = cset$ref
+    g_to_t <- NULL
+    target.loc = cset$pars$target.loc
+    target_start = start(cset$target)
+    target_end = end(cset$target)
+    rc = cset$pars$rc
+    ref = cset$ref
   
-  if (isTRUE(renumbered)){
-    if (any(is.na(c(target_start, target_end, rc)))){
-      stop("Must specify target.loc (cut site), target_start,
-           target_end and rc for renumbering")
+    if (isTRUE(renumbered)){
+      if (any(is.na(c(target_start, target_end, rc)))){
+        stop("Must specify target.loc (cut site), target_start,
+             target_end and rc for renumbering")
+      }
+
+      g_to_t <- cset$.genomeToTargetLocs(target.loc, target_start, target_end, 
+                       as.character(strand(cset$target)) %in% c("+", "*"))
     }
-
-    g_to_t <- cset$.genomeToTargetLocs(target.loc, target_start, target_end, 
-                     as.character(strand(cset$target)) %in% c("+", "*"))
-  }
   
-  # rc means "display on negative strand"
-  # Reversing ranges is dealt with in .findMismatches
+    # rc means "display on negative strand"
+    # Reversing ranges is dealt with in .findMismatches
 
-  # This section is slow
-  cig_by_run <- BiocParallel::bplapply(cset$crispr_runs,
-                         function(crun)  crun$getCigarLabels(
-                           target = cset$target,
-                           target.loc = target.loc, #cut.site,
-                           genome_to_target = g_to_t,
-                           ref = ref,
-                           separate.snv = split.snv,
-                           match.label = cset$pars$match_label,
-                           mismatch.label = cset$pars$mismatch_label,
-                           rc = rc, upstream = upstream.snv,
-                           downstream = downstream.snv), BPPARAM = bpparam)
+    # This section is slow
+    cig_by_run <- BiocParallel::bplapply(cset$crispr_runs,
+                           function(crun)  crun$getCigarLabels(
+                             target = cset$target,
+                             target.loc = target.loc, #cut.site,
+                             genome_to_target = g_to_t,
+                             ref = ref,
+                             separate.snv = split.snv,
+                             match.label = cset$pars$match_label,
+                             mismatch.label = cset$pars$mismatch_label,
+                             rc = rc, upstream = upstream.snv,
+                             downstream = downstream.snv), BPPARAM = bpparam)
   
-  cig_by_run
+    cig_by_run
 } # -----
+
+
+splitInsertions = function(cset, alleles = NULL, sample.pct = NULL, ...){
+    # Split insertions if the inserted sequence is greater than
+    # sample.pct percentage in any sample
+    # ... arguments for indelLabels
+      
+    cat("alleles = ", alleles, "\n")
+    vc <- variantCounts(cset, result = "proportions")
+    
+    if (! is.null(sample.pct)){
+      
+      if (! sample.pct >= 0 & sample.pct <= 100){
+        stop("sample.pct should be between 0 and 100")
+      }
+      
+      keep <- apply(vc, 1, function(x) any(x >= sample.pct))
+      alleles <- c(names(keep)[keep], alleles)
+    }
+    
+    if (is.null(alleles)){
+      stop("Either sample.pct or alleles must not be NULL")
+    } 
+
+    missing_alleles <- setdiff(alleles, rownames(vc))
+    cat(sprintf("missing alleles: %s\n", paste(missing_alleles, collapse = ",")))
+    
+    
+    if (any(missing_alleles)){
+      warning(sprintf("Alleles not found: %s",
+                      paste(missing_alleles, collapse = "")))
+    }
+    
+    cset_alns <- alns(cset)
+    aln_lens <- lengths(cset_alns)
+    cset_alns <- unlist(cset_alns)
+    new_labels <- SummarizedExperiment::mcols(cset_alns)$"allele"
+    to_change <- new_labels %in% alleles & grepl("I", cigar(cset_alns))
+    
+    if (! TRUE %in% to_change){
+      warning("No alleles to change")
+      invisible(return(cset))
+    }
+    
+    alns <- cset_alns[to_change]
+    indel_labs <- CrispRVariants:::indelLabels(alns, rc = cset$pars$rc,
+                        genome.to.pos = cset$genome_to_target,
+                        as.string = FALSE, ...)
+    
+    indel_locs <- GenomicAlignments::cigarRangesAlongQuerySpace(cigar(alns),
+                                                          ops = c("I","D","N"))
+    indel_seqs <- Biostrings::extractAt(SummarizedExperiment::mcols(alns)$seq,
+                                        indel_locs)
+    indel_seqs <- relist(sprintf("(%s)", as.character(unlist(indel_seqs))),
+                         indel_seqs)
+    indel_labs <- paste(indel_labs, indel_seqs, collapse = "", sep = "")
+    new_labels[to_change] <- indel_labs
+    dummy <- cset$setCigarLabels(labels = 
+                  relist(new_labels, IRanges::PartitioningByWidth(aln_lens)))
+    cset
+}

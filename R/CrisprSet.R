@@ -39,7 +39,7 @@
 #'@field target The target location, as a GRanges object
 #'@author Helen Lindsay
 #'@seealso \code{\link{readsToTarget}} and \code{\link{readsToTargets}}
-#'for initialising a CrisprSet, \code{\link[CrispRVariants]{CrisprRun}}
+#'for initialising a CrisprSet, \code{\link{CrisprRun}} container for sample data.
 #'@examples
 #'# Load the metadata table
 #'md_fname <- system.file("extdata", "gol_F1_metadata_small.txt", package = "CrispRVariants")
@@ -180,6 +180,8 @@ CrisprSet$methods(
     
       # To do: add checks that replacement alleles still have same indel combinations
       # or write a consensus function for alleles with different indels 
+      # Make return value self instead of labels
+      # (long term switching to pure S4 class)
     
       if (isTRUE(verbose)) message("Renaming cigar strings\n")
     
@@ -206,7 +208,7 @@ CrisprSet$methods(
       if (isTRUE(verbose)) message("Counting variant combinations\n")
       .self$.countCigars(cig_by_run)
       .self$.getInsertions()
-      cig_by_run
+      invisible(cig_by_run)
   }, # -----
 
   # .countCigars -----

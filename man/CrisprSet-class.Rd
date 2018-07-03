@@ -290,7 +290,7 @@ crispr_set <- readsToTarget(bam_fnames, target = gd, reference = reference,
 }
 \seealso{
 \code{\link{readsToTarget}} and \code{\link{readsToTargets}}
-for initialising a CrisprSet, \code{\link[CrispRVariants]{CrisprRun}}
+for initialising a CrisprSet, \code{\link{CrisprRun}}
 }
 \author{
 Helen Lindsay

@@ -23,7 +23,7 @@
 #'chimeras <- bam[chimera_indices]
 findChimeras <- function(bam, by.flag = FALSE){
   if (isTRUE(by.flag) & ! "flag" %in% names(mcols(bam))){
-    stop("If 'by.cigar' is TRUE, bam must have a metadata column 'flag'")
+    stop("If 'by.flag' is TRUE, bam must have a metadata column 'flag'")
   }
   if (isTRUE(by.flag)){
     suppl <- bitwAnd(mcols(bam)$flag, 2048)

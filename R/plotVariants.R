@@ -43,7 +43,7 @@ setGeneric("plotVariants", function(obj, ...) {
 #'p <- plotVariants(gol, txdb = txdb,
 #'                  plotAlignments.args = list(plot.text.size = 4, legend.cols = 2),
 #'                  plotFreqHeatmap.args = list(plot.text.size = 4),
-#'                  left.plot.margin = grid::unit(c(0.1,0,0.5,1), "lines"))
+#'                  left.plot.margin = grid::unit(c(0.1,0.2,0.5,1), "lines"))
 #'
 setMethod("plotVariants", signature("CrisprSet"),
           function(obj, ..., txdb = NULL, add.chr = TRUE,
@@ -136,7 +136,7 @@ setMethod("plotVariants", signature("CrisprSet"),
 #'@return The arranged plots
 arrangePlots <- function(top.plot, left.plot, right.plot, fig.height = NULL,
                       col.wdth.ratio  = c(2, 1), row.ht.ratio = c(1,6),
-                      left.plot.margin = grid::unit(c(0.1,0,3,0.2), "lines")){
+                      left.plot.margin = grid::unit(c(0.1,0.2,3,0.2), "lines")){
 
   # Set the size ratio of the top and bottom rows
   plot_hts <- if (is.null(fig.height)){ row.ht.ratio

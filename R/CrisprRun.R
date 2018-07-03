@@ -25,7 +25,7 @@
 #'Set at initialisation of a CrisprSet object, but not at
 #'initialisation of a CrisprRun object.
 #'@field chimeras Chimeric, off-target alignments corresponding to alignments in alns
-#'@seealso \code{\link[CrispRVariants]{CrisprSet}}
+#'@seealso \code{\link{CrisprSet}}
 #'@author Helen Lindsay
 #'@examples
 #'# readsToTarget with signature("GAlignments", "GRanges") returns a 

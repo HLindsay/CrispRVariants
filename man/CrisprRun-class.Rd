@@ -102,7 +102,7 @@ crispr_run <- readsToTarget(alns, target = gd, reference = reference,
 # e.g. crispr_set$crispr_runs[[1]]
 }
 \seealso{
-\code{\link[CrispRVariants]{CrisprSet}}
+\code{\link{CrisprSet}}
 }
 \author{
 Helen Lindsay
